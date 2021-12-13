@@ -163,6 +163,7 @@ using UnityEngine;
     void CreateNewShape(AudioEvent _audioEvent)
     {
         //calc params
+        //TODO: MAPPING!
         float size = _audioEvent.value/2;
         float seperation = 0.05f;
         float coherence = 0.05f;
