@@ -1,294 +1,100 @@
-﻿#if ENABLE_INPUT_SYSTEM 
-using UnityEngine.InputSystem;
-#endif
-
+﻿
 using UnityEngine;
+using System.Collections;
 
-namespace UnityTemplateProjects
+public class SimpleCameraController : MonoBehaviour
 {
-    public class SimpleCameraController : MonoBehaviour
+
+    /*
+    Writen by Windexglow 11-13-10.  Use it, edit it, steal it I don't care.  
+    Converted to C# 27-02-13 - no credit wanted.
+    Simple flycam I made, since I couldn't find any others made public.  
+    Made simple to use (drag and drop, done) for regular keyboard layout  
+    wasd : basic movement
+    shift : Makes camera accelerate
+    space : Moves camera on X and Z axis only.  So camera doesn't gain any height*/
+
+
+    float mainSpeed = 10.0f; //regular speed
+    float shiftAdd = 250.0f; //multiplied by how long shift is held.  Basically running
+    float maxShift = 1000.0f; //Maximum speed when holdin gshift
+    float camSens = 0.25f; //How sensitive it with mouse
+    private Vector3 lastMouse = new Vector3(255, 255, 255); //kind of in the middle of the screen, rather than at the top (play)
+    private float totalRun = 1.0f;
+
+    void Update()
     {
-        class CameraState
-        {
-            public float yaw;
-            public float pitch;
-            public float roll;
-            public float x;
-            public float y;
-            public float z;
+        lastMouse = Input.mousePosition - lastMouse;
+        lastMouse = new Vector3(-lastMouse.y * camSens, lastMouse.x * camSens, 0);
+        lastMouse = new Vector3(transform.eulerAngles.x + lastMouse.x, transform.eulerAngles.y + lastMouse.y, 0);
+        transform.eulerAngles = lastMouse;
+        lastMouse = Input.mousePosition;
+        //Mouse  camera angle done.  
 
-            public void SetFromTransform(Transform t)
+        //Keyboard commands
+        float f = 0.0f;
+        Vector3 p = GetBaseInput();
+        if (p.sqrMagnitude > 0)
+        { // only move while a direction key is pressed
+            if (Input.GetKey(KeyCode.LeftShift))
             {
-                pitch = t.eulerAngles.x;
-                yaw = t.eulerAngles.y;
-                roll = t.eulerAngles.z;
-                x = t.position.x;
-                y = t.position.y;
-                z = t.position.z;
+                totalRun += Time.deltaTime;
+                p = p * totalRun * shiftAdd;
+                p.x = Mathf.Clamp(p.x, -maxShift, maxShift);
+                p.y = Mathf.Clamp(p.y, -maxShift, maxShift);
+                p.z = Mathf.Clamp(p.z, -maxShift, maxShift);
+            }
+            else
+            {
+                totalRun = Mathf.Clamp(totalRun * 0.5f, 1f, 1000f);
+                p = p * mainSpeed;
             }
 
-            public void Translate(Vector3 translation)
-            {
-                Vector3 rotatedTranslation = Quaternion.Euler(pitch, yaw, roll) * translation;
-
-                x += rotatedTranslation.x;
-                y += rotatedTranslation.y;
-                z += rotatedTranslation.z;
+            p = p * Time.deltaTime;
+            Vector3 newPosition = transform.position;
+            if (Input.GetKey(KeyCode.Space))
+            { //If player wants to move on X and Z axis only
+                transform.Translate(p);
+                newPosition.x = transform.position.x;
+                newPosition.z = transform.position.z;
+                transform.position = newPosition;
             }
-
-            public void LerpTowards(CameraState target, float positionLerpPct, float rotationLerpPct)
+            else
             {
-                yaw = Mathf.Lerp(yaw, target.yaw, rotationLerpPct);
-                pitch = Mathf.Lerp(pitch, target.pitch, rotationLerpPct);
-                roll = Mathf.Lerp(roll, target.roll, rotationLerpPct);
-                
-                x = Mathf.Lerp(x, target.x, positionLerpPct);
-                y = Mathf.Lerp(y, target.y, positionLerpPct);
-                z = Mathf.Lerp(z, target.z, positionLerpPct);
-            }
-
-            public void UpdateTransform(Transform t)
-            {
-                t.eulerAngles = new Vector3(pitch, yaw, roll);
-                t.position = new Vector3(x, y, z);
+                transform.Translate(p);
             }
         }
-        
-        CameraState m_TargetCameraState = new CameraState();
-        CameraState m_InterpolatingCameraState = new CameraState();
-
-        [Header("Movement Settings")]
-        [Tooltip("Exponential boost factor on translation, controllable by mouse wheel.")]
-        public float boost = 3.5f;
-
-        [Tooltip("Time it takes to interpolate camera position 99% of the way to the target."), Range(0.001f, 1f)]
-        public float positionLerpTime = 0.2f;
-
-        [Header("Rotation Settings")]
-        [Tooltip("X = Change in mouse position.\nY = Multiplicative factor for camera rotation.")]
-        public AnimationCurve mouseSensitivityCurve = new AnimationCurve(new Keyframe(0f, 0.5f, 0f, 5f), new Keyframe(1f, 2.5f, 0f, 0f));
-
-        [Tooltip("Time it takes to interpolate camera rotation 99% of the way to the target."), Range(0.001f, 1f)]
-        public float rotationLerpTime = 0.01f;
-
-        [Tooltip("Whether or not to invert our Y axis for mouse input to rotation.")]
-        public bool invertY = false;
-
-#if ENABLE_INPUT_SYSTEM
-        InputAction movementAction;
-        InputAction verticalMovementAction;
-        InputAction lookAction;
-        InputAction boostFactorAction;
-        bool        mouseRightButtonPressed;
-
-        void Start()
-        {
-            var map = new InputActionMap("Simple Camera Controller");
-
-            lookAction = map.AddAction("look", binding: "<Mouse>/delta");
-            movementAction = map.AddAction("move", binding: "<Gamepad>/leftStick");
-            verticalMovementAction = map.AddAction("Vertical Movement");
-            boostFactorAction = map.AddAction("Boost Factor", binding: "<Mouse>/scroll");
-
-            lookAction.AddBinding("<Gamepad>/rightStick").WithProcessor("scaleVector2(x=15, y=15)");
-            movementAction.AddCompositeBinding("Dpad")
-                .With("Up", "<Keyboard>/w")
-                .With("Up", "<Keyboard>/upArrow")
-                .With("Down", "<Keyboard>/s")
-                .With("Down", "<Keyboard>/downArrow")
-                .With("Left", "<Keyboard>/a")
-                .With("Left", "<Keyboard>/leftArrow")
-                .With("Right", "<Keyboard>/d")
-                .With("Right", "<Keyboard>/rightArrow");
-            verticalMovementAction.AddCompositeBinding("Dpad")
-                .With("Up", "<Keyboard>/pageUp")
-                .With("Down", "<Keyboard>/pageDown")
-                .With("Up", "<Keyboard>/e")
-                .With("Down", "<Keyboard>/q")
-                .With("Up", "<Gamepad>/rightshoulder")
-                .With("Down", "<Gamepad>/leftshoulder");
-            boostFactorAction.AddBinding("<Gamepad>/Dpad").WithProcessor("scaleVector2(x=1, y=4)");
-
-            movementAction.Enable();
-            lookAction.Enable();
-            verticalMovementAction.Enable();
-            boostFactorAction.Enable();
-        }
-#endif
-
-        void OnEnable()
-        {
-            m_TargetCameraState.SetFromTransform(transform);
-            m_InterpolatingCameraState.SetFromTransform(transform);
-        }
-
-        Vector3 GetInputTranslationDirection()
-        {
-            Vector3 direction = Vector3.zero;
-#if ENABLE_INPUT_SYSTEM
-            var moveDelta = movementAction.ReadValue<Vector2>();
-            direction.x = moveDelta.x;
-            direction.z = moveDelta.y;
-            direction.y = verticalMovementAction.ReadValue<Vector2>().y;
-#else
-            if (Input.GetKey(KeyCode.W))
-            {
-                direction += Vector3.forward;
-            }
-            if (Input.GetKey(KeyCode.S))
-            {
-                direction += Vector3.back;
-            }
-            if (Input.GetKey(KeyCode.A))
-            {
-                direction += Vector3.left;
-            }
-            if (Input.GetKey(KeyCode.D))
-            {
-                direction += Vector3.right;
-            }
-            if (Input.GetKey(KeyCode.Q))
-            {
-                direction += Vector3.down;
-            }
-            if (Input.GetKey(KeyCode.E))
-            {
-                direction += Vector3.up;
-            }
-#endif
-            return direction;
-        }
-        
-        void Update()
-        {
-            // Exit Sample  
-
-            if (IsEscapePressed())
-            {
-                Application.Quit();
-				#if UNITY_EDITOR
-				UnityEditor.EditorApplication.isPlaying = false; 
-				#endif
-            }
-
-            // Hide and lock cursor when right mouse button pressed
-            if (IsRightMouseButtonDown())
-            {
-                Cursor.lockState = CursorLockMode.Locked;
-            }
-
-            // Unlock and show cursor when right mouse button released
-            if (IsRightMouseButtonUp())
-            {
-                Cursor.visible = true;
-                Cursor.lockState = CursorLockMode.None;
-            }
-
-            // Rotation
-            if (IsCameraRotationAllowed())
-            {
-                var mouseMovement = GetInputLookRotation() * Time.deltaTime * 5;
-                if (invertY)
-                    mouseMovement.y = -mouseMovement.y;
-                
-                var mouseSensitivityFactor = mouseSensitivityCurve.Evaluate(mouseMovement.magnitude);
-
-                m_TargetCameraState.yaw += mouseMovement.x * mouseSensitivityFactor;
-                m_TargetCameraState.pitch += mouseMovement.y * mouseSensitivityFactor;
-            }
-            
-            // Translation
-            var translation = GetInputTranslationDirection() * Time.deltaTime;
-
-            // Speed up movement when shift key held
-            if (IsBoostPressed())
-            {
-                translation *= 10.0f;
-            }
-            
-            // Modify movement by a boost factor (defined in Inspector and modified in play mode through the mouse scroll wheel)
-            boost += GetBoostFactor();
-            translation *= Mathf.Pow(2.0f, boost);
-
-            m_TargetCameraState.Translate(translation);
-
-            // Framerate-independent interpolation
-            // Calculate the lerp amount, such that we get 99% of the way to our target in the specified time
-            var positionLerpPct = 1f - Mathf.Exp((Mathf.Log(1f - 0.99f) / positionLerpTime) * Time.deltaTime);
-            var rotationLerpPct = 1f - Mathf.Exp((Mathf.Log(1f - 0.99f) / rotationLerpTime) * Time.deltaTime);
-            m_InterpolatingCameraState.LerpTowards(m_TargetCameraState, positionLerpPct, rotationLerpPct);
-
-            m_InterpolatingCameraState.UpdateTransform(transform);
-        }
-
-        float GetBoostFactor()
-        {
-#if ENABLE_INPUT_SYSTEM
-            return boostFactorAction.ReadValue<Vector2>().y * 0.01f;
-#else
-            return Input.mouseScrollDelta.y * 0.2f;
-#endif
-        }
-
-        Vector2 GetInputLookRotation()
-        {
-#if ENABLE_INPUT_SYSTEM
-            return lookAction.ReadValue<Vector2>();
-#else
-            return new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y")) * 10;
-#endif
-        }
-
-        bool IsBoostPressed()
-        {
-#if ENABLE_INPUT_SYSTEM
-            bool boost = Keyboard.current != null ? Keyboard.current.leftShiftKey.isPressed : false; 
-            boost |= Gamepad.current != null ? Gamepad.current.xButton.isPressed : false;
-            return boost;
-#else
-            return Input.GetKey(KeyCode.LeftShift);
-#endif
-
-        }
-
-        bool IsEscapePressed()
-        {
-#if ENABLE_INPUT_SYSTEM
-            return Keyboard.current != null ? Keyboard.current.escapeKey.isPressed : false; 
-#else
-            return Input.GetKey(KeyCode.Escape);
-#endif
-        }
-
-        bool IsCameraRotationAllowed()
-        {
-#if ENABLE_INPUT_SYSTEM
-            bool canRotate = Mouse.current != null ? Mouse.current.rightButton.isPressed : false;
-            canRotate |= Gamepad.current != null ? Gamepad.current.rightStick.ReadValue().magnitude > 0 : false;
-            return canRotate;
-#else
-            return Input.GetMouseButton(1);
-#endif
-        }
-
-        bool IsRightMouseButtonDown()
-        {
-#if ENABLE_INPUT_SYSTEM
-            return Mouse.current != null ? Mouse.current.rightButton.isPressed : false;
-#else
-            return Input.GetMouseButtonDown(1);
-#endif
-        }
-
-        bool IsRightMouseButtonUp()
-        {
-#if ENABLE_INPUT_SYSTEM
-            return Mouse.current != null ? !Mouse.current.rightButton.isPressed : false;
-#else
-            return Input.GetMouseButtonUp(1);
-#endif
-        }
-
     }
 
+    private Vector3 GetBaseInput()
+    { //returns the basic values, if it's 0 than it's not active.
+        Vector3 p_Velocity = new Vector3();
+        if (Input.GetKey(KeyCode.W))
+        {
+            p_Velocity += new Vector3(0, 0, 1);
+        }
+        if (Input.GetKey(KeyCode.S))
+        {
+            p_Velocity += new Vector3(0, 0, -1);
+        }
+        if (Input.GetKey(KeyCode.A))
+        {
+            p_Velocity += new Vector3(-1, 0, 0);
+        }
+        if (Input.GetKey(KeyCode.D))
+        {
+            p_Velocity += new Vector3(1, 0, 0);
+        }
+        if (Input.GetKey(KeyCode.Q))
+        {
+            p_Velocity += new Vector3(0, 1, 0);
+
+        }
+        if (Input.GetKey(KeyCode.E))
+        {
+            p_Velocity += new Vector3(0, -1, 0);
+
+        }
+        return p_Velocity;
+    }
 }

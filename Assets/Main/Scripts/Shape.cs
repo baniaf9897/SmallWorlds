@@ -62,4 +62,5 @@ public struct Shape
 
     public float value;
     public int repitions;
+    public float seed;
 }

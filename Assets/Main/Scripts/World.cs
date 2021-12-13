@@ -6,6 +6,11 @@ public class World : MonoBehaviour
 {
 
     public bool rapidMode = false;
+    public ComputeShader computeShaderTmp;
+    public Material materialTmp;
+
+    [Range(0f, 1f)]
+    public float quadSize = 0.5f;
     
     private ShapeManager m_shapeManager;
     private AudioManager m_audioManager;
@@ -18,7 +23,7 @@ public class World : MonoBehaviour
     
     void Setup()
     {
-        m_shapeManager = new ShapeManager();
+        m_shapeManager = new ShapeManager(computeShaderTmp,materialTmp,quadSize);
         m_audioManager = new AudioManager();
         m_interactionManager = new InteractionManager();
 
@@ -38,6 +43,10 @@ public class World : MonoBehaviour
     }
 
 
+    private void OnDestroy()
+    {
+        m_shapeManager.OnDestroy();
+    }
     void RunRapidMode()
     {
         Debug.Log("[World] Rapid Mode finished");
