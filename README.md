@@ -1,1 +1,1 @@
-# BoidSpace
+# SmallWorlds
