@@ -2,11 +2,13 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class ShapeManager : Object
+ public class ShapeManager : Object
 {
     private ComputeShader m_computeTemplate;
     private Material m_matTemplate;
     private float m_quadSize;
+    private ShapePropertyDomains m_propertyDomains;
+
 
     private List<Material> m_materials;
     private List<Shape> m_shapes;
@@ -16,14 +18,17 @@ public class ShapeManager : Object
     private List<ComputeBuffer> m_argsBuffers;
     private Mesh m_mesh;
 
-    public ShapeManager(ComputeShader _computeShaderTmp, Material _matTmp, float _quadSize)
+
+    public ShapeManager(ComputeShader _computeShaderTmp, Material _matTmp, float _quadSize, ShapePropertyDomains _limits)
     {
         m_computeTemplate = _computeShaderTmp;
         m_matTemplate = _matTmp;
         m_quadSize = _quadSize;
+        m_propertyDomains = _limits;
 
         Setup();
     }
+
     
     void Setup()
     {

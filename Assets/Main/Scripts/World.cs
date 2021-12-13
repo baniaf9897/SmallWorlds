@@ -2,18 +2,13 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
- 
-public class World : MonoBehaviour
+[System.Serializable]
+
+public struct ShapePropertyDomains
 {
-    public bool rapidMode = false;
-    public ComputeShader computeShaderTmp;
-    public Material materialTmp;
-
-    [Range(0f, 1f)]
-    public float quadSize = 0.5f;
 
 
-    [Range(0.1f,5.0f)]
+    [Range(0.1f, 5.0f)]
     public float minSize;
 
     [Range(0.1f, 5.0f)]
@@ -38,7 +33,16 @@ public class World : MonoBehaviour
     public int minNumber;
     [Range(1, 32768)]
     public int maxNumber;
+}
+public class World : MonoBehaviour
+{
+    public bool rapidMode = false;
+    public ComputeShader computeShaderTmp;
+    public Material materialTmp;
 
+    public ShapePropertyDomains limits;
+    [Range(0f, 1f)]
+    public float quadSize = 0.5f;
 
     private ShapeManager m_shapeManager;
     private AudioManager m_audioManager;
