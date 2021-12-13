@@ -94,8 +94,7 @@ using UnityEngine;
         ComputeBuffer argsBuffer = new ComputeBuffer(1, shapeProps.args.Length * sizeof(uint), ComputeBufferType.IndirectArguments);
         ComputeBuffer boidPropertiesBuffer = new ComputeBuffer(_number, ParticleProps.Size());
         ComputeBuffer boidBuffer = new ComputeBuffer(_number, Particle.Size());
-        ComputeBuffer distanceFieldBuffer = new ComputeBuffer(1, 8 * sizeof(float));
-
+ 
         int kernel = GetShapeIndex(_shape);//compute.FindKernel("CSCube");
 
 
