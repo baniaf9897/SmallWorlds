@@ -51,6 +51,8 @@ using UnityEngine;
 
         Shape shapeProps = new Shape();
         shapeProps.value = _value;
+        shapeProps.repitions = 1;
+        shapeProps.seed = Random.Range(0.0f, 1.0f);
         shapeProps.center = _center;
         shapeProps.size = _size;
         shapeProps.shape = _shape;
@@ -162,37 +164,42 @@ using UnityEngine;
     void CreateNewShape(AudioEvent _audioEvent)
     {
         //calc params
+        float size = 0.5f;
+        float seperation = 0.05f;
+        float coherence = 0.05f;
+        float speed = 0.5f;
+        int number = 2056*8;
+        ShapeGeometry geometry = ShapeGeometry.SPHERE;
 
-        //init new shape
-        //InitNewShape();
+        InitNewShape(_audioEvent.value, new Vector3(0,0,0),size,geometry,coherence,seperation,speed,number);
         Debug.Log("[ShapeManager] Create new Shape");
     }
 
     void UpdateShape(Shape _shape)
     {
-        Debug.Log(m_shapes.Count);
 
         _shape.repitions++;
         Shape max = GetMostRepititiveShape();
-
  
         for (int i = 0; i < m_shapes.Count; i++)
         {
             float x = 0.0f;
+            Shape s = m_shapes[i];
 
             if (max.repitions > 0.0f)
             {
-                x = (float)m_shapes[i].repitions / (float)max.repitions;
+                x = (float)s.repitions / (float)max.repitions;
             }
 
-            float value = Map(m_shapes[i].value, 0.0f, 10000.0f, 1.5f, 2.5f);
+            float value = Map(s.value, 0.0f, 10000.0f, 1.5f, 2.5f);
 
             float alpha = value * Mathf.PI;
             float r = 2.0f + (1.0f - x) * 15.0f;
 
-            SphericalToCartesian(r, m_shapes[i].seed * Mathf.PI, alpha, out Vector3 pos);
-            _shape.center = pos;
+            SphericalToCartesian(r, s.seed * Mathf.PI, alpha, out Vector3 pos);
 
+            s.center = pos;
+            m_shapes[i] = s;
         }
     }
 

@@ -402,4 +402,4 @@ MonoBehaviour:
     maxSpeed: 1
     minNumber: 256
     maxNumber: 2048
-  quadSize: 0.5
+  quadSize: 0.1
