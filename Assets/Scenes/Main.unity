@@ -391,14 +391,15 @@ MonoBehaviour:
   rapidMode: 0
   computeShaderTmp: {fileID: 7200000, guid: f4a318dd9696c0340a01f2afbee0cb11, type: 3}
   materialTmp: {fileID: 2100000, guid: b9d5bfdcdb68f1f469630a330cfbac6c, type: 2}
+  limits:
+    minSize: 0.5
+    maxSize: 2
+    minCoherence: 0
+    maxCoherence: 1
+    minSeperation: 0
+    maxSeperation: 1
+    minSpeed: 0.05
+    maxSpeed: 1
+    minNumber: 256
+    maxNumber: 2048
   quadSize: 0.5
-  minSize: 0.49
-  maxSize: 2.06
-  minCoherence: 0.14
-  maxCoherence: 1.05
-  minSeperation: 0.08
-  maxSeperation: 1.02
-  minSpeed: 0.08
-  maxSpeed: 1.01
-  minNumber: 32768
-  maxNumber: 32768

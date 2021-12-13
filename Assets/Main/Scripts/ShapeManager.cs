@@ -41,8 +41,6 @@ using UnityEngine;
         m_particlePropsBuffers = new List<ComputeBuffer>();
         m_argsBuffers = new List<ComputeBuffer>();
 
-
-
         //InitNewShape(new Vector3(0, 0, 0), 1.0f, ShapeGeometry.SPHERE, 0.05f, 0.05f, 0.05f, 1000);
         Debug.Log("[ShapeManager] Setup finished");
 

@@ -55,7 +55,7 @@ public class World : MonoBehaviour
     
     void Setup()
     {
-        m_shapeManager = new ShapeManager(computeShaderTmp,materialTmp,quadSize);
+        m_shapeManager = new ShapeManager(computeShaderTmp,materialTmp,quadSize,limits);
         m_audioManager = new AudioManager();
         m_interactionManager = new InteractionManager();
 
