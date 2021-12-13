@@ -2,16 +2,44 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+ 
 public class World : MonoBehaviour
 {
-
     public bool rapidMode = false;
     public ComputeShader computeShaderTmp;
     public Material materialTmp;
 
     [Range(0f, 1f)]
     public float quadSize = 0.5f;
-    
+
+
+    [Range(0.1f,5.0f)]
+    public float minSize;
+
+    [Range(0.1f, 5.0f)]
+    public float maxSize;
+
+    [Range(0.0f, 2.0f)]
+    public float minCoherence;
+    [Range(0.0f, 2.0f)]
+    public float maxCoherence;
+
+    [Range(0.0f, 2.0f)]
+    public float minSeperation;
+    [Range(0.0f, 2.0f)]
+    public float maxSeperation;
+
+    [Range(0.0f, 2.0f)]
+    public float minSpeed;
+    [Range(0.0f, 2.0f)]
+    public float maxSpeed;
+
+    [Range(1, 32768)]
+    public int minNumber;
+    [Range(1, 32768)]
+    public int maxNumber;
+
+
     private ShapeManager m_shapeManager;
     private AudioManager m_audioManager;
     private InteractionManager m_interactionManager;
