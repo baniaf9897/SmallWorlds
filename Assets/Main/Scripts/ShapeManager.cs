@@ -112,11 +112,11 @@ using UnityEngine;
 
         compute.SetBuffer(kernel, "_Boids", boidBuffer);
         compute.SetBuffer(kernel, "_Properties", boidPropertiesBuffer);
-        compute.SetBuffer(kernel, "distanceField", distanceFieldBuffer);
         compute.SetVector("center", _center);
         compute.SetFloat("speed", _speed);
         compute.SetFloat("coherenceFactor", _coherence);
         compute.SetFloat("seperationFactor", _seperation);
+        compute.SetFloat("size", _size);
 
         material.SetBuffer("_Properties", boidPropertiesBuffer);
 
@@ -152,7 +152,7 @@ using UnityEngine;
         {
             if (m_shapes[i].value == _currentAudioEvent.value)
             {
-                UpdateShape(m_shapes[i]);
+                UpdateShape(i);
                 return;
             }
         }
@@ -164,24 +164,23 @@ using UnityEngine;
     void CreateNewShape(AudioEvent _audioEvent)
     {
         //calc params
-        float size = 0.5f;
+        float size = _audioEvent.value/2;
         float seperation = 0.05f;
         float coherence = 0.05f;
         float speed = 0.5f;
-        int number = 2056*8;
+        int number = 2056*16;
         ShapeGeometry geometry = ShapeGeometry.SPHERE;
 
         InitNewShape(_audioEvent.value, new Vector3(0,0,0),size,geometry,coherence,seperation,speed,number);
         Debug.Log("[ShapeManager] Create new Shape");
     }
 
-    void UpdateShape(Shape _shape)
+    void UpdateShape(int index)
     {
-
-        _shape.repitions++;
+        m_shapes[index].repitions++; 
         Shape max = GetMostRepititiveShape();
- 
-        for (int i = 0; i < m_shapes.Count; i++)
+
+         for (int i = 0; i < m_shapes.Count; i++)
         {
             float x = 0.0f;
             Shape s = m_shapes[i];
@@ -191,10 +190,10 @@ using UnityEngine;
                 x = (float)s.repitions / (float)max.repitions;
             }
 
-            float value = Map(s.value, 0.0f, 10000.0f, 1.5f, 2.5f);
+            float value = Map(s.value, 0.0f, 5.0f, 1.5f, 2.5f);
 
             float alpha = value * Mathf.PI;
-            float r = 2.0f + (1.0f - x) * 15.0f;
+            float r = 2.0f + (1.0f - x) * 20.0f;
 
             SphericalToCartesian(r, s.seed * Mathf.PI, alpha, out Vector3 pos);
 
@@ -246,6 +245,12 @@ using UnityEngine;
 
             Matrix4x4 rot = Matrix4x4.TRS(Vector3.zero, q, Vector3.one);
             m_shaders[i].SetMatrix("rotMat", rot);
+
+
+            m_shaders[i].SetFloat("speed", s.speed);
+            m_shaders[i].SetFloat("coherenceFactor", s.coherence);
+            m_shaders[i].SetFloat("seperationFactor", s.seperation);
+            m_shaders[i].SetFloat("size", s.size);
 
             m_shaders[i].Dispatch(kernel, Mathf.CeilToInt(s.particles.Count / 128), 1, 1);
             m_shapes[i] = s;

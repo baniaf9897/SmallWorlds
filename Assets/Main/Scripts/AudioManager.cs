@@ -23,7 +23,7 @@ public class AudioManager
 
     public void Update()
     {
-        m_currentAudioEvent.value = 0.0f;
+        m_currentAudioEvent.value = Random.Range(0,10);
         //call audio analysis and set current audio event accordingly 
     }
 

@@ -46,7 +46,7 @@ public enum ShapeGeometry
     CAPSULE
 }
 
-public struct Shape 
+public class Shape 
 {
     public Vector3 center;
     public float size;

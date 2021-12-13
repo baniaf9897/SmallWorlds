@@ -26,19 +26,19 @@ float3 center;
 float speed;
 float coherenceFactor;
 float seperationFactor;
-
+float size;
 
 float4x4 rotMat;
 
 float CalcDistanceSphere(float3 center, float3 pos) {
-    float s = 1;
+  
     pos = (pos - center);
-    return length(pos) - s;
+    return length(pos) - size;
 }
 
 float CalcDistanceCube(float3 center, float3 pos) {
 
-    float3 b = float3(1, 1, 1);
+    float3 b = float3(size, size, size);
     pos = (pos - center);
 
     float3 q = abs(pos) - b;
@@ -48,8 +48,8 @@ float CalcDistanceCube(float3 center, float3 pos) {
 float CalcDistanceCapsule(float3 center, float3 pos) {
 
     float3 p = (pos - center);
-    float3 a = float3(0, -2, 0);
-    float3 b = float3(0, 2, 0);
+    float3 a = float3(0, -size/2.0, 0);
+    float3 b = float3(0, size / 2.0, 0);
 
     float r = 1;
 
@@ -62,7 +62,7 @@ float CalcDistanceCapsule(float3 center, float3 pos) {
 
 float CalcDistancePyramid(float3 center, float3 pos) {
 
-    float h = 5.0;
+    float h = size*2;
 
     float3 p = (pos - center);
     float m2 = h * h + 0.25;
