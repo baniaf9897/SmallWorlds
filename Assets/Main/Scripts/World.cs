@@ -37,6 +37,10 @@ public struct ShapePropertyDomains
 public class World : MonoBehaviour
 {
     public bool rapidMode = false;
+
+    [Range(0.0f, 1.0f)]
+    public float rapidModeProgress = 0.0f;
+
     public ComputeShader computeShaderTmp;
     public Material materialTmp;
 
@@ -81,16 +85,30 @@ public class World : MonoBehaviour
     }
     void RunRapidMode()
     {
+
+        //get Data
+        List<float> data = m_audioManager.GetAudioData(); 
+
+        for (int i = 0; i < rapidModeProgress * data.Count; i++)
+        {
+            AudioEvent audioEvent = new AudioEvent();
+            audioEvent.value = data[i];
+            m_shapeManager.Update(audioEvent);
+        }
+
         Debug.Log("[World] Rapid Mode finished");
+
     }
 
     void Update()
     {
-        if (!rapidMode) { 
+        if (!rapidMode)
+        {
             m_audioManager.Update();
             m_shapeManager.Update(m_audioManager.GetCurrentAudioEvent());
         }
-
+        else
+            m_shapeManager.Draw();
     }
 
 }

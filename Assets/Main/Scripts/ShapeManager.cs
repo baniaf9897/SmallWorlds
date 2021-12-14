@@ -52,7 +52,7 @@ using UnityEngine;
         Shape shapeProps = new Shape();
         shapeProps.value = _value;
         shapeProps.repitions = 1;
-        shapeProps.seed = Random.Range(0.0f, 1.0f);
+        shapeProps.seed = Map(_value, 0.0f, 10000.0f, 0.0f, 1.0f);
         shapeProps.center = _center;
         shapeProps.size = _size;
         shapeProps.shape = _shape;
@@ -67,7 +67,7 @@ using UnityEngine;
 
         shapeProps.rotation = Quaternion.identity;
 
-        Color color = Color.Lerp(Color.red, Color.blue, Random.Range(0.0f, 1.0f));
+        Color color = Color.Lerp(Color.red, Color.blue, Map(_value,0.0f, 5000.0f, 0,1.0f));
 
         for (int i = 0; i < _number; i++)
         {
@@ -132,7 +132,12 @@ using UnityEngine;
     {
         UpdateShapes(_currentAudioEvent);
         RunComputeShaders();
+ 
+        Draw();
+    }
 
+    public void Draw()
+    { 
         for (int i = 0; i < m_shapes.Count; i++)
         {
             Graphics.DrawMeshInstancedIndirect(m_mesh, 0, m_materials[i], m_shapes[i].bounds, m_argsBuffers[i]);
@@ -164,11 +169,11 @@ using UnityEngine;
     {
         //calc params
         //TODO: MAPPING!
-        float size = _audioEvent.value/2;
-        float seperation = 0.05f;
-        float coherence = 0.05f;
-        float speed = 0.5f;
-        int number = 2056*16;
+        float size = Map(_audioEvent.value,0.0f,10000.0f, m_propertyDomains.minSize, m_propertyDomains.maxSize);
+        float seperation = Map(_audioEvent.value, 0.0f, 10000.0f, m_propertyDomains.minSeperation, m_propertyDomains.maxSeperation);
+        float coherence = Map(_audioEvent.value, 0.0f, 10000.0f, m_propertyDomains.minCoherence, m_propertyDomains.maxCoherence);
+        float speed = Map(_audioEvent.value, 0.0f, 10000.0f, m_propertyDomains.minSpeed, m_propertyDomains.maxSpeed);
+        int number = Map((int)_audioEvent.value, 0, 10000, m_propertyDomains.minNumber, m_propertyDomains.maxNumber);
         ShapeGeometry geometry = ShapeGeometry.SPHERE;
 
         InitNewShape(_audioEvent.value, new Vector3(0,0,0),size,geometry,coherence,seperation,speed,number);
@@ -193,7 +198,7 @@ using UnityEngine;
             float value = Map(s.value, 0.0f, 5.0f, 1.5f, 2.5f);
 
             float alpha = value * Mathf.PI;
-            float r = 2.0f + (1.0f - x) * 20.0f;
+            float r =  (1.0f - x) * 8.0f;
 
             SphericalToCartesian(r, s.seed * Mathf.PI, alpha, out Vector3 pos);
 
@@ -203,6 +208,11 @@ using UnityEngine;
     }
 
     public float Map(float value, float from1, float to1, float from2, float to2)
+    {
+        return (value - from1) / (to1 - from1) * (to2 - from2) + from2;
+    }
+
+    public int Map(int value, int from1, int to1, int from2, int to2)
     {
         return (value - from1) / (to1 - from1) * (to2 - from2) + from2;
     }
