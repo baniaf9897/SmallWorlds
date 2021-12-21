@@ -24,9 +24,9 @@ public struct ShapePropertyDomains
     [Range(0.0f, 2.0f)]
     public float maxSeperation;
 
-    [Range(0.0f, 2.0f)]
+    [Range(0.0f, 5.0f)]
     public float minSpeed;
-    [Range(0.0f, 2.0f)]
+    [Range(0.0f, 5.0f)]
     public float maxSpeed;
 
     [Range(1, 32768)]

@@ -136,7 +136,7 @@ void CSCube(uint3 id : SV_DispatchThreadID)
     float dist = CalcDistanceCube(center, pos);
 
     pos += vel * speed;
-    vel += GetCoherenceSteering(pos, dist) + acc * seperationFactor;
+    vel += GetCoherenceSteering(pos, dist) - vel;//* seperationFactor;
 
     vel = limit(vel, 0.1f);
 
@@ -160,11 +160,11 @@ void CSSphere(uint3 id : SV_DispatchThreadID)
 
     float dist = CalcDistanceSphere(center, pos);
 
+    vel += GetCoherenceSteering(pos, dist) - (center - pos) * seperationFactor + acc - vel * 0.05;// vel;// +acc * seperationFactor - vel;//acc * seperationFactor;
+    vel = limit(vel, 0.001f);
+
+    vel = -vel * 0.05;
     pos += vel * speed;
-    vel += GetCoherenceSteering(pos, dist) + acc * seperationFactor;
-
-
-    vel = limit(vel, 0.01f);
 
 
     _Boids[id.x].pos = pos;

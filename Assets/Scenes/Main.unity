@@ -1001,8 +1001,8 @@ MonoBehaviour:
     maxCoherence: 1
     minSeperation: 0.08
     maxSeperation: 1
-    minSpeed: 0.5
-    maxSpeed: 1
+    minSpeed: 1.85
+    maxSpeed: 2
     minNumber: 8192
     maxNumber: 16384
   quadSize: 0.1
