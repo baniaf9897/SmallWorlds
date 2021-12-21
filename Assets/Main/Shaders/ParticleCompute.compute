@@ -160,15 +160,30 @@ void CSSphere(uint3 id : SV_DispatchThreadID)
 
     float dist = CalcDistanceSphere(center, pos);
 
-    vel += GetCoherenceSteering(pos, dist) - (center - pos) * seperationFactor + acc - vel * 0.05;// vel;// +acc * seperationFactor - vel;//acc * seperationFactor;
-    vel = limit(vel, 0.001f);
+    float acceleration = 0;
+    //gravity
+    acceleration += ((1.0) / dist * dist) * (center - pos);
+    //friction
+    acceleration += -1 * vel * 0.5;
 
-    vel = -vel * 0.05;
+    acceleration += acc;
+
+    vel += acceleration;
+
+    //vel = limit(vel, 0.01f);
+    vel = vel.normalize();
+
     pos += vel * speed;
+
+
+   // vel += GetCoherenceSteering(pos, dist) - (center - pos) * seperationFactor  ;// vel;// +acc * seperationFactor - vel;//acc * seperationFactor;
+
+    // pos += vel * speed;
 
 
     _Boids[id.x].pos = pos;
     _Boids[id.x].velocity = vel;
+    _Boids[id.x].acceleration -= acc * 0.5;
 
     _Properties[id.x].color = _Boids[id.x].color;
     _Properties[id.x].mat = GetTransformationMatrix(pos, scale);

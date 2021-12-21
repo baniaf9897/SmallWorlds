@@ -999,8 +999,8 @@ MonoBehaviour:
     maxSize: 5
     minCoherence: 0.08
     maxCoherence: 1
-    minSeperation: 0.08
-    maxSeperation: 1
+    minSeperation: 0.58
+    maxSeperation: 1.46
     minSpeed: 1.85
     maxSpeed: 2
     minNumber: 8192
