@@ -48,7 +48,13 @@ Shader "Custom/ShapeShader"
 
         float4x4 rotateAlign(float3 v1, float3 v2)
         {
+            //v1 quad pos
+            //v2 dir to cam
+
+            //
+            
             float3 axis = cross(v1, v2);
+
 
             const float cosA = dot(v1, v2);
             const float k = 1.0f / (1.0f + cosA);
