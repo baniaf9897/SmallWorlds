@@ -70,6 +70,7 @@ public class World : MonoBehaviour
     private void OnValidate()
     {
         Setup();
+        m_shapeManager.SetGlobalCoherence(limits.minCoherence);
 
         if (rapidMode)
         {

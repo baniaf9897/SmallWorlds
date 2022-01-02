@@ -72,10 +72,13 @@ using UnityEngine;
         for (int i = 0; i < _number; i++)
         {
             Particle p = new Particle();
-            p.pos = _center;
+
+            Vector3 randomOffset = new Vector3(Random.Range(-0.01f, 0.01f), Random.Range(-0.01f, 0.01f), Random.Range(-0.01f, 0.01f));
+
+            p.pos = _center + randomOffset;// + new Vector3(Random.Range(-0.1f, 0.1f), Random.Range(-0.1f, 0.1f), Random.Range(-0.1f, 0.1f));
             p.scale = Vector3.one;
-            p.velocity = new Vector3(Random.Range(-0.01f, 0.01f), Random.Range(-0.01f, 0.01f), Random.Range(-0.01f, 0.01f));
-            p.acceleration = new Vector3(Random.Range(-0.01f, 0.01f), Random.Range(-0.01f, 0.01f), Random.Range(-0.01f, 0.01f));
+            p.velocity = Vector3.zero;//new Vector3(Random.Range(-0.01f, 0.01f), Random.Range(-0.01f, 0.01f), Random.Range(-0.01f, 0.01f));
+            p.acceleration = Vector3.zero;//new Vector3(Random.Range(-0.01f, 0.01f), Random.Range(-0.01f, 0.01f), Random.Range(-0.01f, 0.01f));
             p.color = color;
 
             shapeProps.particles.Add(p);
@@ -171,7 +174,7 @@ using UnityEngine;
         //TODO: MAPPING!
         float size = Map(_audioEvent.value,0.0f,10000.0f, m_propertyDomains.minSize, m_propertyDomains.maxSize);
         float seperation = Map(_audioEvent.value, 0.0f, 10000.0f, m_propertyDomains.minSeperation, m_propertyDomains.maxSeperation);
-        float coherence = Map(_audioEvent.value, 0.0f, 10000.0f, m_propertyDomains.minCoherence, m_propertyDomains.maxCoherence);
+        float coherence = 0;// Map(_audioEvent.value, 0.0f, 10000.0f, m_propertyDomains.minCoherence, m_propertyDomains.maxCoherence);
         float speed = Map(_audioEvent.value, 0.0f, 10000.0f, m_propertyDomains.minSpeed, m_propertyDomains.maxSpeed);
         int number = Map((int)_audioEvent.value, 0, 10000, m_propertyDomains.minNumber, m_propertyDomains.maxNumber);
         ShapeGeometry geometry = ShapeGeometry.SPHERE;
@@ -353,5 +356,15 @@ using UnityEngine;
             m_particlePropsBuffers[i].Release();
             m_argsBuffers[i].Release();
         }
+    }
+
+    public void SetGlobalCoherence(float coherence)
+    {
+        foreach(Shape shape in m_shapes)
+        {
+            shape.coherence = coherence;
+        }
+
+        RunComputeShaders();
     }
 }

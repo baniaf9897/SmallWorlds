@@ -4,6 +4,7 @@
 #pragma kernel CSPyramid
 #pragma kernel CSCapsule
 
+#include "ixMath.Noise.cginc"
 
 
 struct BoidProps {
@@ -30,9 +31,11 @@ float size;
 
 float4x4 rotMat;
 
+float massCenter = 1.0;
+
 float CalcDistanceSphere(float3 center, float3 pos) {
   
-    pos = (pos - center);
+    pos = pos - center;
     return length(pos) - size;
 }
 
@@ -125,6 +128,50 @@ float4x4 GetTransformationMatrix(float3 pos, float3 scale) {
         ), rotMat);
 }
 
+float3 hash3(float3 p)
+{
+    float3 q = float3(dot(p, float2(127.1, 311.7)),
+        dot(p, float2(269.5, 183.3)),
+        dot(p, float2(419.2, 371.9)));
+    return frac(sin(q) * 43758.5453);
+}
+
+float voronoise(in float2 p, float u, float v)
+{
+    float k = 1.0 + 63.0 * pow(1.0 - v, 6.0);
+
+    float2 i = floor(p);
+    float2 f = frac(p);
+
+    float2 a = float2(0.0, 0.0);
+    for (int y = -2; y <= 2; y++)
+        for (int x = -2; x <= 2; x++)
+        {
+            float2  g = float2(x, y);
+            float3  o = float3(u, u, 1.0);// hash3(i + g);// * float3(u, u, 1.0);
+            float2  d = g - f + o.xy;
+            float w = pow(1.0 - smoothstep(0.0, 1.414, length(d)), k);
+            a += float2(o.z * w, w);
+        }
+
+    return a.x / a.y;
+}
+
+float3 GetGravityForce(float3 pos, float mass1, float mass2, float dist) {
+
+    if (dist < 0)
+        return float3(0, 0, 0);//float3(noise3D(pos), noise3D(pos), noise3D(pos)) * 0.5;
+
+    float3 dir = (center - pos) / dist;
+
+    return  (  (mass1 * mass2) /   (dist * dist)) *  dir; 
+    
+}       
+
+float3 GetSteeringForce(float3 pos) {
+    return float3(0.1, 0, 0.1);
+}
+
 [numthreads(128, 1, 1)]
 void CSCube(uint3 id : SV_DispatchThreadID)
 {
@@ -137,7 +184,6 @@ void CSCube(uint3 id : SV_DispatchThreadID)
 
     pos += vel * speed;
     vel += GetCoherenceSteering(pos, dist) - vel;//* seperationFactor;
-
     vel = limit(vel, 0.1f);
 
     _Boids[id.x].pos = pos;
@@ -155,36 +201,26 @@ void CSSphere(uint3 id : SV_DispatchThreadID)
     float3 scale = _Boids[id.x].scale;
     float3 pos = _Boids[id.x].pos;
     float3 vel = _Boids[id.x].velocity;
-    float3 acc = _Boids[id.x].acceleration;
-
-
+ 
+    float mass = 0.0001;
     float dist = CalcDistanceSphere(center, pos);
 
-    float acceleration = 0;
-    //gravity
-    acceleration += ((1.0) / dist * dist) * (center - pos);
-    //friction
-    acceleration += -1 * vel * 0.5;
+    float3 acceleration = float3(0,0,0);
 
-    acceleration += acc;
+    acceleration += GetGravityForce(pos, mass, 0.0001, dist) / mass  ;
+ 
+    acceleration = limit(acceleration, 0.1);
 
     vel += acceleration;
-
-    //vel = limit(vel, 0.01f);
-    vel = vel.normalize();
-
-    pos += vel * speed;
-
-
-   // vel += GetCoherenceSteering(pos, dist) - (center - pos) * seperationFactor  ;// vel;// +acc * seperationFactor - vel;//acc * seperationFactor;
-
-    // pos += vel * speed;
-
+ 
+    vel = limit(vel, 0.3);
+    pos += vel * speed; 
+ 
+ 
 
     _Boids[id.x].pos = pos;
     _Boids[id.x].velocity = vel;
-    _Boids[id.x].acceleration -= acc * 0.5;
-
+ 
     _Properties[id.x].color = _Boids[id.x].color;
     _Properties[id.x].mat = GetTransformationMatrix(pos, scale);
 
@@ -230,7 +266,7 @@ void CSPyramid(uint3 id : SV_DispatchThreadID)
     pos += vel * speed;
     vel += GetCoherenceSteering(pos, dist) + acc * seperationFactor;
 
-    vel = limit(vel, 0.01f);
+    vel = limit(vel, 0.01);
 
     _Boids[id.x].pos = pos;
     _Boids[id.x].velocity = vel;
