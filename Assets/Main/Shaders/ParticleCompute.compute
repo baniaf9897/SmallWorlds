@@ -18,6 +18,7 @@ struct Boid {
     float3 velocity;
     float3 acceleration;
     float4 color;
+    float mass;
 };
 
 struct ShapeProps {
@@ -41,6 +42,7 @@ float4x4 rotMat;
 
 int maxShapeCount;
 float massCenter = 1.0;
+float massChange = 0.0;
 
 float CalcDistanceSphere(float3 center, float3 pos) {
   
@@ -181,7 +183,9 @@ float3 GetGravityForce(float3 pos, float mass1, float mass2, float dist) {
         }
     }
 
-    force *= 0.0001;
+    force /= length(force);
+
+    force *= 0.001;
 
     if (dist < 0)
         return force;
@@ -191,8 +195,28 @@ float3 GetGravityForce(float3 pos, float mass1, float mass2, float dist) {
     
 }       
 
-float3 GetSteeringForce(float3 pos) {
-    return float3(noise3D(pos), noise3D(float3(pos.yxz)), noise3D(float3(pos.zxy))) * 0.001;
+float3 GetSteeringForce(float3 pos , float mass) {
+    return float3(noise3D(pos), noise3D(float3(pos.yxz)), noise3D(float3(pos.zxy))) * 0.1 * mass;
+}
+
+
+float3 applyForces(float3 pos, float mass1, float mass2, float dist) {
+    float3 acceleration = float3(0, 0, 0);
+    
+    //gravity
+    acceleration += GetGravityForce(pos, mass1, mass2, dist);
+
+    //random steering => perlin noise
+    acceleration += GetSteeringForce(pos, mass1);
+
+    //friction
+    float3 friction = -0.01 * acceleration / length(acceleration);
+    acceleration += friction;
+
+    acceleration = limit(acceleration, 0.3);
+
+
+    return acceleration;
 }
 
 [numthreads(128, 1, 1)]
@@ -202,15 +226,19 @@ void CSCube(uint3 id : SV_DispatchThreadID)
     float3 pos = _Boids[id.x].pos;
     float3 vel = _Boids[id.x].velocity;
     float3 acc = _Boids[id.x].acceleration;
+    float mass = _Boids[id.x].mass;
 
     float dist = CalcDistanceCube(center, pos);
 
+    vel += applyForces(pos, mass, 1, dist);
+    vel = limit(vel, 0.3);
+
     pos += vel * speed;
-    vel += GetCoherenceSteering(pos, dist) - vel;//* seperationFactor;
-    vel = limit(vel, 0.1f);
+    mass += noise3D(pos) * massChange;
 
     _Boids[id.x].pos = pos;
     _Boids[id.x].velocity = vel;
+    _Boids[id.x].mass = mass;
 
     _Properties[id.x].color = _Boids[id.x].color;
 
@@ -224,34 +252,20 @@ void CSSphere(uint3 id : SV_DispatchThreadID)
     float3 scale = _Boids[id.x].scale;
     float3 pos = _Boids[id.x].pos;
     float3 vel = _Boids[id.x].velocity;
- 
-    float mass = 2;
+    float mass = _Boids[id.x].mass;
+
     float dist = CalcDistanceSphere(center, pos);
-
-    float3 acceleration = float3(0,0,0);
-
-
-
-    //gravity
-    acceleration += GetGravityForce(pos, mass, 0.01, dist);
-    
-    //random steering => perlin noise
-    acceleration += GetSteeringForce(pos);
-    
-    acceleration = limit(acceleration, 0.1);
-
-    //friction
-    float3 friction = -0.001 * acceleration / length(acceleration);
-    acceleration += friction;
-
-    vel += acceleration;
+ 
+    vel += applyForces(pos, mass, 1, dist);
     vel = limit(vel, 0.3);
-    
-    pos += vel * speed; 
+
+    pos += vel * speed;
+    mass += noise3D(pos) * massChange;
 
     _Boids[id.x].pos = pos;
     _Boids[id.x].velocity = vel;
- 
+    _Boids[id.x].mass = mass;
+
     _Properties[id.x].color = _Boids[id.x].color;
     _Properties[id.x].mat = GetTransformationMatrix(pos, scale);
 
@@ -265,17 +279,19 @@ void CSCapsule(uint3 id : SV_DispatchThreadID)
     float3 vel = _Boids[id.x].velocity;
     float3 acc = _Boids[id.x].acceleration;
 
+    float mass = _Boids[id.x].mass;
 
     float dist = CalcDistanceCapsule(center, pos);
 
+    vel += applyForces(pos, mass, 1, dist);
+    vel = limit(vel, 0.3);
+
     pos += vel * speed;
-    vel += GetCoherenceSteering(pos, dist) + acc * seperationFactor;
-
-    vel = limit(vel, 0.01f);
-
+    mass += noise3D(pos) * massChange;
 
     _Boids[id.x].pos = pos;
     _Boids[id.x].velocity = vel;
+    _Boids[id.x].mass = mass;
 
     _Properties[id.x].color = _Boids[id.x].color;
 
@@ -290,17 +306,19 @@ void CSPyramid(uint3 id : SV_DispatchThreadID)
     float3 pos = _Boids[id.x].pos;
     float3 vel = _Boids[id.x].velocity;
     float3 acc = _Boids[id.x].acceleration;
-
+    float mass = _Boids[id.x].mass;
 
     float dist = CalcDistancePyramid(center, pos);
 
-    pos += vel * speed;
-    vel += GetCoherenceSteering(pos, dist) + acc * seperationFactor;
+    vel += applyForces(pos, mass, 1, dist);
+    vel = limit(vel, 0.3);
 
-    vel = limit(vel, 0.01);
+    pos += vel * speed;
+    mass += noise3D(pos) * massChange;
 
     _Boids[id.x].pos = pos;
     _Boids[id.x].velocity = vel;
+    _Boids[id.x].mass = mass;
 
     _Properties[id.x].color = _Boids[id.x].color;
 

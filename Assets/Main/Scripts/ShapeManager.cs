@@ -86,7 +86,7 @@ struct ShapeProps
         shapeProps.particles = new List<Particle>();
         shapeProps.particleProps = new List<ParticleProps>();
         shapeProps.args = new uint[5] { 0, 0, 0, 0, 0 };
-        shapeProps.mass = 1.0f;
+        shapeProps.mass = Random.Range(0,10);
 
 
         shapeProps.rotation = Quaternion.identity;
@@ -104,13 +104,14 @@ struct ShapeProps
             p.velocity = Vector3.zero;//new Vector3(Random.Range(-0.01f, 0.01f), Random.Range(-0.01f, 0.01f), Random.Range(-0.01f, 0.01f));
             p.acceleration = Vector3.zero;//new Vector3(Random.Range(-0.01f, 0.01f), Random.Range(-0.01f, 0.01f), Random.Range(-0.01f, 0.01f));
             p.color = color;
+            p.mass = Random.Range(0, 5);
 
             shapeProps.particles.Add(p);
 
             ParticleProps pProps = new ParticleProps();
             pProps.color = color;
             pProps.mat = Matrix4x4.TRS(p.pos, Quaternion.identity, p.scale);
-
+            
             shapeProps.particleProps.Add(pProps);
 
         }
@@ -122,7 +123,7 @@ struct ShapeProps
         ComputeBuffer boidPropertiesBuffer = new ComputeBuffer(_number, ParticleProps.Size());
         ComputeBuffer boidBuffer = new ComputeBuffer(_number, Particle.Size());
  
-        int kernel = GetShapeIndex(_shape);//compute.FindKernel("CSCube");
+        int kernel = GetIndexByShape(_shape);//compute.FindKernel("CSCube");
 
 
         shapeProps.args[0] = m_mesh.GetIndexCount(0);
@@ -206,7 +207,9 @@ struct ShapeProps
             float coherence = 0;// Map(_audioEvent.value, 0.0f, 10000.0f, m_propertyDomains.minCoherence, m_propertyDomains.maxCoherence);
             float speed = Map(_audioEvent.value, 0.0f, 10000.0f, m_propertyDomains.minSpeed, m_propertyDomains.maxSpeed);
             int number = Map((int)_audioEvent.value, 0, 10000, m_propertyDomains.minNumber, m_propertyDomains.maxNumber);
-            ShapeGeometry geometry = ShapeGeometry.SPHERE;
+
+            int r = Random.Range(0, 3);
+            ShapeGeometry geometry = GetShapeByIndex(r);
 
             InitNewShape(_audioEvent.value, new Vector3(0,0,0),size,geometry,coherence,seperation,speed,number);
             Debug.Log("[ShapeManager] Create new Shape");
@@ -287,7 +290,7 @@ struct ShapeProps
         for (int i = 0; i < m_shapes.Count; i++)
         {
             Shape s = m_shapes[i];
-            int kernel = GetShapeIndex(s.shape);
+            int kernel = GetIndexByShape(s.shape);
             m_shaders[i].SetVector("center", s.center);
 
             s.bounds = new Bounds(s.center, Vector3.one * 10.0f);
@@ -366,7 +369,7 @@ struct ShapeProps
         return mesh;
     }
 
-    int GetShapeIndex(ShapeGeometry shape)
+    int GetIndexByShape(ShapeGeometry shape)
     {
         switch (shape)
         {
@@ -388,6 +391,30 @@ struct ShapeProps
                 };
         }
     }
+
+    ShapeGeometry GetShapeByIndex(int index )
+    {
+        switch (index)
+        {
+            case 0:
+                {
+                    return ShapeGeometry.CUBE;
+                };
+            case 1:
+                {
+                    return ShapeGeometry.SPHERE;
+                };
+            case 2:
+                {
+                    return ShapeGeometry.PYRAMID;
+                }
+            default:
+                {
+                    return ShapeGeometry.CAPSULE;
+                };
+        }
+    }
+
 
     public void OnDestroy()
     {

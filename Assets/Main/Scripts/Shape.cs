@@ -10,10 +10,12 @@ public struct Particle
     public Vector3 velocity;
     public Vector3 acceleration;
     public Vector4 color;
+    public float mass;
 
     public static int Size()
     {
         return
+            sizeof(float) +         //mass
             sizeof(float) * 3 +     // pos;
             sizeof(float) * 3 +     // scale;
             sizeof(float) * 3 +     // vel;
