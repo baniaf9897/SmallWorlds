@@ -225,18 +225,28 @@ void CSSphere(uint3 id : SV_DispatchThreadID)
     float3 pos = _Boids[id.x].pos;
     float3 vel = _Boids[id.x].velocity;
  
-    float mass = 1;
+    float mass = 2;
     float dist = CalcDistanceSphere(center, pos);
 
     float3 acceleration = float3(0,0,0);
 
+
+
+    //gravity
     acceleration += GetGravityForce(pos, mass, 0.01, dist);
+    
+    //random steering => perlin noise
     acceleration += GetSteeringForce(pos);
+    
     acceleration = limit(acceleration, 0.1);
 
+    //friction
+    float3 friction = -0.001 * acceleration / length(acceleration);
+    acceleration += friction;
+
     vel += acceleration;
- 
     vel = limit(vel, 0.3);
+    
     pos += vel * speed; 
 
     _Boids[id.x].pos = pos;
