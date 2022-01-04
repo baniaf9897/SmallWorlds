@@ -33,6 +33,7 @@ Shader "Custom/ShapeShader"
             fixed4 color : COLOR;
             half3 normal : TEXCOORD0;
             float4 diff : TEXCOORD1; // diffuse lighting color
+            float4 worldPos: TEXCOORD2;
         };
 
         struct MeshProperties {
@@ -90,7 +91,7 @@ Shader "Custom/ShapeShader"
 
             float4 view_pos = mul(UNITY_MATRIX_V, world_pos);// just for testing , works with Cull Off 
             o.vertex = mul(UNITY_MATRIX_P, view_pos);
-
+            o.worldPos = world_pos;
             o.color = _Properties[instanceID].color;
             o.normal = UnityObjectToWorldNormal(i.normal);
  
@@ -103,7 +104,12 @@ Shader "Custom/ShapeShader"
 
          fixed4 frag(v2f i, fixed facing : VFACE) : SV_Target
          {
-             return i.color * i.diff;
+             
+            if (i.worldPos.y > 10 || i.worldPos.y < - 10 || i.worldPos.x > 10 || i.worldPos.x < -10 || i.worldPos.z > 10 || i.worldPos.z < -10) {
+                return i.color * i.diff * 0.01;
+            }
+
+            return i.color * i.diff;
          }
          ENDCG
      }
