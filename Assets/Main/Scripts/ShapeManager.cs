@@ -2,6 +2,13 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+
+struct ShapeProps
+{
+   public float mass;
+   public Vector3 center;
+   public int active;
+}
  public class ShapeManager : Object
 {
     private ComputeShader m_computeTemplate;
@@ -18,7 +25,9 @@ using UnityEngine;
     private List<ComputeBuffer> m_argsBuffers;
     private Mesh m_mesh;
 
-
+    ComputeBuffer m_shapePropBuffer;
+    ShapeProps[] m_shapeProps;
+    int maxShapeCount = 50;
     public ShapeManager(ComputeShader _computeShaderTmp, Material _matTmp, float _quadSize, ShapePropertyDomains _limits)
     {
         m_computeTemplate = _computeShaderTmp;
@@ -40,6 +49,20 @@ using UnityEngine;
         m_particleBuffers = new List<ComputeBuffer>();
         m_particlePropsBuffers = new List<ComputeBuffer>();
         m_argsBuffers = new List<ComputeBuffer>();
+
+        m_shapeProps =  new ShapeProps[maxShapeCount];
+
+        for(int i = 0; i < maxShapeCount; i++)
+        {
+            ShapeProps shapeProps = new ShapeProps();
+            shapeProps.center = new Vector3(0, 0, 0);
+            shapeProps.mass = 0;
+            shapeProps.active = 0;
+            m_shapeProps[i] = shapeProps;
+        }
+
+        m_shapePropBuffer = new ComputeBuffer(maxShapeCount, sizeof(float) * 4 + sizeof(int));
+        m_shapePropBuffer.SetData(m_shapeProps);
 
         //InitNewShape(new Vector3(0, 0, 0), 1.0f, ShapeGeometry.SPHERE, 0.05f, 0.05f, 0.05f, 1000);
         Debug.Log("[ShapeManager] Setup finished");
@@ -63,6 +86,7 @@ using UnityEngine;
         shapeProps.particles = new List<Particle>();
         shapeProps.particleProps = new List<ParticleProps>();
         shapeProps.args = new uint[5] { 0, 0, 0, 0, 0 };
+        shapeProps.mass = 1.0f;
 
 
         shapeProps.rotation = Quaternion.identity;
@@ -114,6 +138,10 @@ using UnityEngine;
 
         compute.SetBuffer(kernel, "_Boids", boidBuffer);
         compute.SetBuffer(kernel, "_Properties", boidPropertiesBuffer);
+        compute.SetBuffer(kernel, "_ShapeProps", m_shapePropBuffer);
+
+        
+
         compute.SetVector("center", _center);
         compute.SetFloat("speed", _speed);
         compute.SetFloat("coherenceFactor", _coherence);
@@ -170,17 +198,19 @@ using UnityEngine;
 
     void CreateNewShape(AudioEvent _audioEvent)
     {
-        //calc params
-        //TODO: MAPPING!
-        float size = Map(_audioEvent.value,0.0f,10000.0f, m_propertyDomains.minSize, m_propertyDomains.maxSize);
-        float seperation = Map(_audioEvent.value, 0.0f, 10000.0f, m_propertyDomains.minSeperation, m_propertyDomains.maxSeperation);
-        float coherence = 0;// Map(_audioEvent.value, 0.0f, 10000.0f, m_propertyDomains.minCoherence, m_propertyDomains.maxCoherence);
-        float speed = Map(_audioEvent.value, 0.0f, 10000.0f, m_propertyDomains.minSpeed, m_propertyDomains.maxSpeed);
-        int number = Map((int)_audioEvent.value, 0, 10000, m_propertyDomains.minNumber, m_propertyDomains.maxNumber);
-        ShapeGeometry geometry = ShapeGeometry.SPHERE;
+        if(m_shapes.Count < maxShapeCount) { 
+            //calc params
+            //TODO: MAPPING!
+            float size = Map(_audioEvent.value,0.0f,10000.0f, m_propertyDomains.minSize, m_propertyDomains.maxSize);
+            float seperation = Map(_audioEvent.value, 0.0f, 10000.0f, m_propertyDomains.minSeperation, m_propertyDomains.maxSeperation);
+            float coherence = 0;// Map(_audioEvent.value, 0.0f, 10000.0f, m_propertyDomains.minCoherence, m_propertyDomains.maxCoherence);
+            float speed = Map(_audioEvent.value, 0.0f, 10000.0f, m_propertyDomains.minSpeed, m_propertyDomains.maxSpeed);
+            int number = Map((int)_audioEvent.value, 0, 10000, m_propertyDomains.minNumber, m_propertyDomains.maxNumber);
+            ShapeGeometry geometry = ShapeGeometry.SPHERE;
 
-        InitNewShape(_audioEvent.value, new Vector3(0,0,0),size,geometry,coherence,seperation,speed,number);
-        Debug.Log("[ShapeManager] Create new Shape");
+            InitNewShape(_audioEvent.value, new Vector3(0,0,0),size,geometry,coherence,seperation,speed,number);
+            Debug.Log("[ShapeManager] Create new Shape");
+        }
     }
 
     void UpdateShape(int index)
@@ -205,9 +235,18 @@ using UnityEngine;
 
             SphericalToCartesian(r, s.seed * Mathf.PI, alpha, out Vector3 pos);
 
+
             s.center = pos;
             m_shapes[i] = s;
+
+            m_shapeProps[i].mass = s.mass;
+            m_shapeProps[i].center = s.center;
+            m_shapeProps[i].active = 1;
         }
+
+
+        m_shapePropBuffer.SetData(m_shapeProps);
+
     }
 
     public float Map(float value, float from1, float to1, float from2, float to2)
@@ -264,6 +303,8 @@ using UnityEngine;
             m_shaders[i].SetFloat("coherenceFactor", s.coherence);
             m_shaders[i].SetFloat("seperationFactor", s.seperation);
             m_shaders[i].SetFloat("size", s.size);
+            m_shaders[i].SetBuffer(kernel, "_ShapeProps", m_shapePropBuffer);
+            m_shaders[i].SetInt("maxShapeCount", maxShapeCount);
 
             m_shaders[i].Dispatch(kernel, Mathf.CeilToInt(s.particles.Count / 128), 1, 1);
             m_shapes[i] = s;

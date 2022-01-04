@@ -63,4 +63,5 @@ public class Shape
     public float value;
     public int repitions;
     public float seed;
+    public float mass;
 }

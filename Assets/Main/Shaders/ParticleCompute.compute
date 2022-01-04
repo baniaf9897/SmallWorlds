@@ -20,6 +20,14 @@ struct Boid {
     float4 color;
 };
 
+struct ShapeProps {
+    float mass;
+    float3 center;
+    int active;
+};
+
+
+RWStructuredBuffer<ShapeProps> _ShapeProps;
 RWStructuredBuffer<BoidProps> _Properties;
 RWStructuredBuffer<Boid> _Boids;
 
@@ -31,6 +39,7 @@ float size;
 
 float4x4 rotMat;
 
+int maxShapeCount;
 float massCenter = 1.0;
 
 float CalcDistanceSphere(float3 center, float3 pos) {
@@ -158,17 +167,32 @@ float voronoise(in float2 p, float u, float v)
 
 float3 GetGravityForce(float3 pos, float mass1, float mass2, float dist) {
 
-   if (dist < 0)
-        return float3(0, 0, 0);//float3(noise3D(pos), noise3D(pos), noise3D(pos)) * 0.5;
-    
+
+  
+
+    float3 force = float3(0, 0, 0);
+
+    for (int i = 0; i < maxShapeCount; i++) {
+        if (_ShapeProps[i].active == 1) {
+               float _dist =  length(_ShapeProps[i].center - pos);  
+       
+               float3 dir = (_ShapeProps[i].center - pos) / _dist;
+               force += ((mass1 * _ShapeProps[i].mass) / (_dist * _dist)) * dir;
+        }
+    }
+
+    force *= 0.0001;
+
+    if (dist < 0)
+        return force;
  
     float3 dir = (center - pos) / dist;
-    return  (  (mass1 * mass2) /   (dist * dist)) *  dir; 
+    return   force + ((mass1 * mass2) /   (dist)) *  dir; 
     
 }       
 
 float3 GetSteeringForce(float3 pos) {
-    return float3(noise3D(pos), noise3D(pos), noise3D(pos)) * 0.05;
+    return float3(noise3D(pos), noise3D(float3(pos.yxz)), noise3D(float3(pos.zxy))) * 0.001;
 }
 
 [numthreads(128, 1, 1)]
@@ -201,12 +225,12 @@ void CSSphere(uint3 id : SV_DispatchThreadID)
     float3 pos = _Boids[id.x].pos;
     float3 vel = _Boids[id.x].velocity;
  
-    float mass = 0.0001;
+    float mass = 1;
     float dist = CalcDistanceSphere(center, pos);
 
     float3 acceleration = float3(0,0,0);
 
-    acceleration += GetGravityForce(pos, mass, 0.01, dist) / mass  ;
+    acceleration += GetGravityForce(pos, mass, 0.01, dist);
     acceleration += GetSteeringForce(pos);
     acceleration = limit(acceleration, 0.1);
 
