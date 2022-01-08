@@ -16,7 +16,6 @@ struct ShapeProps
     private float m_quadSize;
     private ShapePropertyDomains m_propertyDomains;
 
-
     private List<Material> m_materials;
     private List<Shape> m_shapes;
     private List<ComputeShader> m_shaders;
@@ -28,6 +27,7 @@ struct ShapeProps
     ComputeBuffer m_shapePropBuffer;
     ShapeProps[] m_shapeProps;
     int maxShapeCount = 50;
+
     public ShapeManager(ComputeShader _computeShaderTmp, Material _matTmp, float _quadSize, ShapePropertyDomains _limits)
     {
         m_computeTemplate = _computeShaderTmp;
@@ -69,7 +69,7 @@ struct ShapeProps
 
     }
 
-    void InitNewShape(float _value,  Vector3 _center, float _size, ShapeGeometry _shape, float _coherence, float _seperation, float _speed, int _number)
+    void InitNewShape(float _value,  Vector3 _center, float _size,float _mass, ShapeGeometry _shape, float _coherence, float _seperation, float _speed, int _number)
     {
 
         Shape shapeProps = new Shape();
@@ -79,14 +79,12 @@ struct ShapeProps
         shapeProps.center = _center;
         shapeProps.size = _size;
         shapeProps.shape = _shape;
-        shapeProps.coherence = _coherence;
-        shapeProps.seperation = _seperation;
         shapeProps.speed = _speed;
         shapeProps.bounds = new Bounds(_center, Vector3.one * 10.0f);
         shapeProps.particles = new List<Particle>();
         shapeProps.particleProps = new List<ParticleProps>();
         shapeProps.args = new uint[5] { 0, 0, 0, 0, 0 };
-        shapeProps.mass = Random.Range(0,10);
+        shapeProps.mass = _mass;
 
 
         shapeProps.rotation = Quaternion.identity;
@@ -104,7 +102,8 @@ struct ShapeProps
             p.velocity = Vector3.zero;//new Vector3(Random.Range(-0.01f, 0.01f), Random.Range(-0.01f, 0.01f), Random.Range(-0.01f, 0.01f));
             p.acceleration = Vector3.zero;//new Vector3(Random.Range(-0.01f, 0.01f), Random.Range(-0.01f, 0.01f), Random.Range(-0.01f, 0.01f));
             p.color = color;
-            p.mass = Random.Range(0, 5);
+            p.mass = Random.Range(0.0f, 1.0f);
+            p.friction = Random.Range(0.0f, 1.0f);
 
             shapeProps.particles.Add(p);
 
@@ -144,6 +143,8 @@ struct ShapeProps
         
 
         compute.SetVector("center", _center);
+        compute.SetFloat("centerMass", _mass);
+
         compute.SetFloat("speed", _speed);
         compute.SetFloat("coherenceFactor", _coherence);
         compute.SetFloat("seperationFactor", _seperation);
@@ -179,14 +180,11 @@ struct ShapeProps
 
     void UpdateShapes(AudioEvent _currentAudioEvent)
     {
-        if(_currentAudioEvent.value < 0.0f)
-        {
-            return;
-        }
 
+        float threshold = 50.0f;
         for (int i = 0; i < m_shapes.Count; i++)
         {
-            if (m_shapes[i].value == _currentAudioEvent.value)
+             if (m_shapes[i].value - threshold < _currentAudioEvent.pitch && m_shapes[i].value + threshold > _currentAudioEvent.pitch)
             {
                 UpdateShape(i);
                 return;
@@ -200,18 +198,21 @@ struct ShapeProps
     void CreateNewShape(AudioEvent _audioEvent)
     {
         if(m_shapes.Count < maxShapeCount) { 
-            //calc params
-            //TODO: MAPPING!
-            float size = Map(_audioEvent.value,0.0f,10000.0f, m_propertyDomains.minSize, m_propertyDomains.maxSize);
-            float seperation = Map(_audioEvent.value, 0.0f, 10000.0f, m_propertyDomains.minSeperation, m_propertyDomains.maxSeperation);
-            float coherence = 0;// Map(_audioEvent.value, 0.0f, 10000.0f, m_propertyDomains.minCoherence, m_propertyDomains.maxCoherence);
-            float speed = Map(_audioEvent.value, 0.0f, 10000.0f, m_propertyDomains.minSpeed, m_propertyDomains.maxSpeed);
-            int number = Map((int)_audioEvent.value, 0, 10000, m_propertyDomains.minNumber, m_propertyDomains.maxNumber);
+           
+            float size = Map(_audioEvent.pitch, 0.0f,1000.0f, m_propertyDomains.minSize, m_propertyDomains.maxSize);
+            
+            float seperation = Map(_audioEvent.pitch, 0.0f, 1000.0f, m_propertyDomains.minSeperation, m_propertyDomains.maxSeperation);
+            float coherence = 0; 
+
+            float speed = Map(_audioEvent.pitch, 0.0f, 1000.0f, m_propertyDomains.minSpeed, m_propertyDomains.maxSpeed);
+            int number = Map((int)_audioEvent.pitch, 0, 1000, m_propertyDomains.minNumber, m_propertyDomains.maxNumber);
+
+            float mass = Random.Range(0.0f, 5.0f);
 
             int r = Random.Range(0, 3);
             ShapeGeometry geometry = GetShapeByIndex(r);
 
-            InitNewShape(_audioEvent.value, new Vector3(0,0,0),size,geometry,coherence,seperation,speed,number);
+            InitNewShape(_audioEvent.pitch, new Vector3(0,0,0),size, mass,geometry,coherence,seperation,speed,number);
             Debug.Log("[ShapeManager] Create new Shape");
         }
     }
@@ -231,6 +232,7 @@ struct ShapeProps
                 x = (float)s.repitions / (float)max.repitions;
             }
 
+ 
             float value = Map(s.value, 0.0f, 5.0f, 1.5f, 2.5f);
 
             float alpha = value * Mathf.PI;
@@ -303,8 +305,6 @@ struct ShapeProps
 
 
             m_shaders[i].SetFloat("speed", s.speed);
-            m_shaders[i].SetFloat("coherenceFactor", s.coherence);
-            m_shaders[i].SetFloat("seperationFactor", s.seperation);
             m_shaders[i].SetFloat("size", s.size);
             m_shaders[i].SetBuffer(kernel, "_ShapeProps", m_shapePropBuffer);
             m_shaders[i].SetInt("maxShapeCount", maxShapeCount);
@@ -426,13 +426,4 @@ struct ShapeProps
         }
     }
 
-    public void SetGlobalCoherence(float coherence)
-    {
-        foreach(Shape shape in m_shapes)
-        {
-            shape.coherence = coherence;
-        }
-
-        RunComputeShaders();
-    }
 }

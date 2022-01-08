@@ -11,11 +11,12 @@ public struct Particle
     public Vector3 acceleration;
     public Vector4 color;
     public float mass;
+    public float friction;
 
     public static int Size()
     {
         return
-            sizeof(float) +         //mass
+            sizeof(float) * 2+         //mass + friction
             sizeof(float) * 3 +     // pos;
             sizeof(float) * 3 +     // scale;
             sizeof(float) * 3 +     // vel;
@@ -51,11 +52,7 @@ public enum ShapeGeometry
 public class Shape 
 {
     public Vector3 center;
-    public float size;
     public ShapeGeometry shape;
-    public float seperation;
-    public float coherence;
-    public float speed;
     public Bounds bounds;
     public List<Particle> particles;
     public List<ParticleProps> particleProps;
@@ -66,4 +63,7 @@ public class Shape
     public int repitions;
     public float seed;
     public float mass;
+    public float speed;
+    public float size;
+
 }

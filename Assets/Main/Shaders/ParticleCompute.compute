@@ -19,6 +19,7 @@ struct Boid {
     float3 acceleration;
     float4 color;
     float mass;
+    float friction;
 };
 
 struct ShapeProps {
@@ -27,22 +28,22 @@ struct ShapeProps {
     int active;
 };
 
-
 RWStructuredBuffer<ShapeProps> _ShapeProps;
 RWStructuredBuffer<BoidProps> _Properties;
 RWStructuredBuffer<Boid> _Boids;
 
 float3 center;
 float speed;
-float coherenceFactor;
-float seperationFactor;
 float size;
+int maxShapeCount;
+float massCenter = 1.0;
+float massChange = 0.9999;
 
 float4x4 rotMat;
 
-int maxShapeCount;
-float massCenter = 1.0;
-float massChange = 0.0;
+
+/****************   SDFs  *****************/
+
 
 float CalcDistanceSphere(float3 center, float3 pos) {
   
@@ -98,22 +99,8 @@ float CalcDistancePyramid(float3 center, float3 pos) {
     return sqrt((d2 + q.z * q.z) / m2) * sign(max(q.z, -p.y));
 }
 
-
-float3 GetCoherenceSteering(float3 pos, float dist) {
-
-    return  (center - pos) * dist * coherenceFactor;
-}
-
-float3 hashOld33(float3 p)
-{
-    p = float3(dot(p, float3(127.1, 311.7, 74.7)),
-        dot(p, float3(269.5, 183.3, 246.1)),
-        dot(p, float3(113.5, 271.9, 124.6)));
-
-    return frac(sin(p) * 43758.5453123);
-}
-float rand(float co) { return frac(sin(co * (91.3458)) * 47453.5453); }
-
+ 
+/****************   Helper  *****************/
 
 float3 limit(float3 v, float _limit) {
 
@@ -125,11 +112,7 @@ float3 limit(float3 v, float _limit) {
     return v;
 }
 
-
-
-
 float4x4 GetTransformationMatrix(float3 pos, float3 scale) {
-
     return mul(float4x4(
         scale.x, 0, 0, pos.x,
         0, scale.y, 0, pos.y,
@@ -138,40 +121,23 @@ float4x4 GetTransformationMatrix(float3 pos, float3 scale) {
         ), rotMat);
 }
 
-float3 hash3(float3 p)
-{
-    float3 q = float3(dot(p, float2(127.1, 311.7)),
-        dot(p, float2(269.5, 183.3)),
-        dot(p, float2(419.2, 371.9)));
-    return frac(sin(q) * 43758.5453);
+float CalcMass(float3 pos, float mass) {
+    return mass + noise3D(pos) * massChange;
 }
 
-float voronoise(in float2 p, float u, float v)
-{
-    float k = 1.0 + 63.0 * pow(1.0 - v, 6.0);
-
-    float2 i = floor(p);
-    float2 f = frac(p);
-
-    float2 a = float2(0.0, 0.0);
-    for (int y = -2; y <= 2; y++)
-        for (int x = -2; x <= 2; x++)
-        {
-            float2  g = float2(x, y);
-            float3  o = float3(u, u, 1.0);// hash3(i + g);// * float3(u, u, 1.0);
-            float2  d = g - f + o.xy;
-            float w = pow(1.0 - smoothstep(0.0, 1.414, length(d)), k);
-            a += float2(o.z * w, w);
-        }
-
-    return a.x / a.y;
+float4 CalcColor(float3 pos, float4 color) {
+     color.r *= (noise3D(pos) + 1) / 2;
+     return color;
 }
+
+/****************   Forces  *****************/
 
 float3 GetGravityForce(float3 pos, float mass1, float mass2, float dist) {
 
-
+    if (dist > 10) {
+        return -1*pos;
+    };
   
-
     float3 force = float3(0, 0, 0);
 
     for (int i = 0; i < maxShapeCount; i++) {
@@ -184,7 +150,6 @@ float3 GetGravityForce(float3 pos, float mass1, float mass2, float dist) {
     }
 
     force /= length(force);
-
     force *= 0.001;
 
     if (dist < 0)
@@ -196,11 +161,11 @@ float3 GetGravityForce(float3 pos, float mass1, float mass2, float dist) {
 }       
 
 float3 GetSteeringForce(float3 pos , float mass) {
-    return float3(noise3D(pos), noise3D(float3(pos.yxz)), noise3D(float3(pos.zxy))) * 0.1 * mass;
+    return float3(noise3D(pos), noise3D(float3(pos.xzy)), noise3D(float3(pos.zxy))) * mass;
 }
 
 
-float3 applyForces(float3 pos, float mass1, float mass2, float dist) {
+float3 applyForces(float3 pos, float mass1, float mass2, float dist, float frictionCoefficient) {
     float3 acceleration = float3(0, 0, 0);
     
     //gravity
@@ -210,7 +175,7 @@ float3 applyForces(float3 pos, float mass1, float mass2, float dist) {
     acceleration += GetSteeringForce(pos, mass1);
 
     //friction
-    float3 friction = -0.01 * acceleration / length(acceleration);
+    float3 friction = frictionCoefficient * acceleration / length(acceleration);
     acceleration += friction;
 
     acceleration = limit(acceleration, 0.3);
@@ -218,6 +183,9 @@ float3 applyForces(float3 pos, float mass1, float mass2, float dist) {
 
     return acceleration;
 }
+
+/****************   Kernels  *****************/
+
 
 [numthreads(128, 1, 1)]
 void CSCube(uint3 id : SV_DispatchThreadID)
@@ -227,21 +195,21 @@ void CSCube(uint3 id : SV_DispatchThreadID)
     float3 vel = _Boids[id.x].velocity;
     float3 acc = _Boids[id.x].acceleration;
     float mass = _Boids[id.x].mass;
+    float friction = _Boids[id.x].friction;
 
     float dist = CalcDistanceCube(center, pos);
 
-    vel += applyForces(pos, mass, 1, dist);
+    vel += applyForces(pos, mass, 1, dist, friction);
     vel = limit(vel, 0.3);
 
     pos += vel * speed;
-    mass += noise3D(pos) * massChange;
+    mass = CalcMass(pos,mass);
 
     _Boids[id.x].pos = pos;
     _Boids[id.x].velocity = vel;
     _Boids[id.x].mass = mass;
 
-    _Properties[id.x].color = _Boids[id.x].color;
-
+    _Properties[id.x].color = CalcColor(pos,_Boids[id.x].color);
     _Properties[id.x].mat = GetTransformationMatrix(pos, scale);
 }
 
@@ -253,20 +221,21 @@ void CSSphere(uint3 id : SV_DispatchThreadID)
     float3 pos = _Boids[id.x].pos;
     float3 vel = _Boids[id.x].velocity;
     float mass = _Boids[id.x].mass;
+    float friction = _Boids[id.x].friction;
 
     float dist = CalcDistanceSphere(center, pos);
  
-    vel += applyForces(pos, mass, 1, dist);
+    vel += applyForces(pos, mass, 1, dist, friction);
     vel = limit(vel, 0.3);
 
     pos += vel * speed;
-    mass += noise3D(pos) * massChange;
+    mass = CalcMass(pos, mass);
 
     _Boids[id.x].pos = pos;
     _Boids[id.x].velocity = vel;
     _Boids[id.x].mass = mass;
 
-    _Properties[id.x].color = _Boids[id.x].color;
+    _Properties[id.x].color = CalcColor(pos, _Boids[id.x].color);
     _Properties[id.x].mat = GetTransformationMatrix(pos, scale);
 
 }
@@ -278,23 +247,23 @@ void CSCapsule(uint3 id : SV_DispatchThreadID)
     float3 pos = _Boids[id.x].pos;
     float3 vel = _Boids[id.x].velocity;
     float3 acc = _Boids[id.x].acceleration;
-
     float mass = _Boids[id.x].mass;
+    float friction = _Boids[id.x].friction;
+
 
     float dist = CalcDistanceCapsule(center, pos);
 
-    vel += applyForces(pos, mass, 1, dist);
+    vel += applyForces(pos, mass, 1, dist, friction);
     vel = limit(vel, 0.3);
 
     pos += vel * speed;
-    mass += noise3D(pos) * massChange;
+    mass = CalcMass(pos, mass);
 
     _Boids[id.x].pos = pos;
     _Boids[id.x].velocity = vel;
     _Boids[id.x].mass = mass;
 
-    _Properties[id.x].color = _Boids[id.x].color;
-
+    _Properties[id.x].color = CalcColor(pos, _Boids[id.x].color);
     _Properties[id.x].mat = GetTransformationMatrix(pos, scale);
 }
 
@@ -307,21 +276,21 @@ void CSPyramid(uint3 id : SV_DispatchThreadID)
     float3 vel = _Boids[id.x].velocity;
     float3 acc = _Boids[id.x].acceleration;
     float mass = _Boids[id.x].mass;
+    float friction = _Boids[id.x].friction;
 
     float dist = CalcDistancePyramid(center, pos);
 
-    vel += applyForces(pos, mass, 1, dist);
+    vel += applyForces(pos, mass, 1, dist, friction);
     vel = limit(vel, 0.3);
 
     pos += vel * speed;
-    mass += noise3D(pos) * massChange;
+    mass = CalcMass(pos, mass);
 
     _Boids[id.x].pos = pos;
     _Boids[id.x].velocity = vel;
     _Boids[id.x].mass = mass;
 
-    _Properties[id.x].color = _Boids[id.x].color;
-
+    _Properties[id.x].color = CalcColor(pos, _Boids[id.x].color);
     _Properties[id.x].mat = GetTransformationMatrix(pos, scale);
 }
 

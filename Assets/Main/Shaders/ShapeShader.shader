@@ -105,11 +105,11 @@ Shader "Custom/ShapeShader"
          fixed4 frag(v2f i, fixed facing : VFACE) : SV_Target
          {
              
-            if (i.worldPos.y > 10 || i.worldPos.y < - 10 || i.worldPos.x > 10 || i.worldPos.x < -10 || i.worldPos.z > 10 || i.worldPos.z < -10) {
-                return i.color * i.diff * 0.01;
+            if (i.worldPos.y > 10 || i.worldPos.y < -10 || i.worldPos.x > 10 || i.worldPos.x < -10 || i.worldPos.z > 10 || i.worldPos.z < -10) {
+                return i.color * i.diff * 0.1;
             }
 
-            return i.color * i.diff;
+            return i.color * (i.diff + float4(0.1,0.1,0.1,0.1)) ;
          }
          ENDCG
      }

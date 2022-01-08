@@ -6,8 +6,6 @@ using UnityEngine;
 
 public struct ShapePropertyDomains
 {
-
-
     [Range(0.1f, 5.0f)]
     public float minSize;
 
@@ -29,9 +27,9 @@ public struct ShapePropertyDomains
     [Range(0.0f, 5.0f)]
     public float maxSpeed;
 
-    [Range(1, 32768)]
+    [Range(1, 32768*2)]
     public int minNumber;
-    [Range(1, 32768)]
+    [Range(1, 32768*2)]
     public int maxNumber;
 }
 public class World : MonoBehaviour
@@ -49,8 +47,10 @@ public class World : MonoBehaviour
     public float quadSize = 0.5f;
 
     private ShapeManager m_shapeManager;
-    private AudioManager m_audioManager;
+    public AudioManager m_audioManager;
     private InteractionManager m_interactionManager;
+
+    ixAudioOSCReceiver m_audioOSCReceiver;
  
      void Start()
     {
@@ -59,6 +59,9 @@ public class World : MonoBehaviour
     
     void Setup()
     {
+
+        m_audioOSCReceiver = GetComponent<ixAudioOSCReceiver>();
+
         m_shapeManager = new ShapeManager(computeShaderTmp,materialTmp,quadSize,limits);
         m_audioManager = new AudioManager();
         m_interactionManager = new InteractionManager();
@@ -70,7 +73,6 @@ public class World : MonoBehaviour
     private void OnValidate()
     {
         Setup();
-        m_shapeManager.SetGlobalCoherence(limits.minCoherence);
 
         if (rapidMode)
         {
@@ -92,9 +94,9 @@ public class World : MonoBehaviour
 
         for (int i = 0; i < rapidModeProgress * data.Count; i++)
         {
-            AudioEvent audioEvent = new AudioEvent();
-            audioEvent.value = data[i];
-            m_shapeManager.Update(audioEvent);
+           // AudioEvent audioEvent = new AudioEvent();
+           // audioEvent.rootMeanSquare = data[i];
+          //  m_shapeManager.Update(audioEvent);
         }
 
         Debug.Log("[World] Rapid Mode finished");
@@ -106,7 +108,8 @@ public class World : MonoBehaviour
         if (!rapidMode)
         {
             m_audioManager.Update();
-            m_shapeManager.Update(m_audioManager.GetCurrentAudioEvent());
+            m_shapeManager.Update(ixAudioOSCReceiver.currentAudioEvent);
+            //m_shapeManager.Update(m_audioManager.GetCurrentAudioEvent());
         }
         else
             m_shapeManager.Draw();

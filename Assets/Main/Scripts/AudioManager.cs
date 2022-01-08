@@ -17,7 +17,7 @@ public class AudioManager
     void Setup()
     {
         m_currentAudioEvent = new AudioEvent();
-        m_currentAudioEvent.value = 0.0f;
+        m_currentAudioEvent.rootMeanSquare = 0.0f;
 
         if(m_debugData == null)
         {
@@ -33,6 +33,11 @@ public class AudioManager
         Debug.Log("[AudioManager] Setup finished");
     }
 
+    void SetCurrentAudioEvent( AudioEvent e)
+    {
+        m_currentAudioEvent=e;
+    }
+
     public AudioEvent GetCurrentAudioEvent()
     {
         return m_currentAudioEvent;
@@ -45,7 +50,7 @@ public class AudioManager
 
     public void Update()
     {
-        m_currentAudioEvent.value = AnalyzeMaxFrequency();//Random.Range(1,5);
+        m_currentAudioEvent.rootMeanSquare = AnalyzeMaxFrequency();//Random.Range(1,5);
         //call audio analysis and set current audio event accordingly 
     }
 
