@@ -2,36 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-[System.Serializable]
 
-public struct ShapePropertyDomains
-{
-    [Range(0.1f, 5.0f)]
-    public float minSize;
 
-    [Range(0.1f, 5.0f)]
-    public float maxSize;
-
-    [Range(0.0f, 2.0f)]
-    public float minCoherence;
-    [Range(0.0f, 2.0f)]
-    public float maxCoherence;
-
-    [Range(0.0f, 2.0f)]
-    public float minSeperation;
-    [Range(0.0f, 2.0f)]
-    public float maxSeperation;
-
-    [Range(0.0f, 5.0f)]
-    public float minSpeed;
-    [Range(0.0f, 5.0f)]
-    public float maxSpeed;
-
-    [Range(1, 32768*2)]
-    public int minNumber;
-    [Range(1, 32768*2)]
-    public int maxNumber;
-}
 public class World : MonoBehaviour
 {
     public bool rapidMode = false;
@@ -51,6 +23,7 @@ public class World : MonoBehaviour
     private InteractionManager m_interactionManager;
 
     ixAudioOSCReceiver m_audioOSCReceiver;
+    Mapper m_mapper;
  
      void Start()
     {
@@ -59,10 +32,16 @@ public class World : MonoBehaviour
     
     void Setup()
     {
+        m_mapper = GetComponent<Mapper>();
+        if(m_mapper == null)
+        {
+            Debug.LogWarning("NO MAPPER FOUND ! ADD MAPPER !");
+        }
+
 
         m_audioOSCReceiver = GetComponent<ixAudioOSCReceiver>();
 
-        m_shapeManager = new ShapeManager(computeShaderTmp,materialTmp,quadSize,limits);
+        m_shapeManager = new ShapeManager(computeShaderTmp,materialTmp,quadSize,m_mapper);
         m_audioManager = new AudioManager();
         m_interactionManager = new InteractionManager();
 

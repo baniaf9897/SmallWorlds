@@ -4,7 +4,7 @@ using UnityEngine;
 using OscCore;
 using UnityEngine.Events;
 
-enum ParamId
+public enum ParamId
 {
     rootMeanSquare,
 	pitch,

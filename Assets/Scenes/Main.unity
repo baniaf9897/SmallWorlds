@@ -1445,6 +1445,7 @@ GameObject:
   - component: {fileID: 2095717743}
   - component: {fileID: 2095717744}
   - component: {fileID: 2095717745}
+  - component: {fileID: 2095717746}
   m_Layer: 0
   m_Name: Space
   m_TagString: Untagged
@@ -1485,10 +1486,10 @@ MonoBehaviour:
   limits:
     minSize: 1.45
     maxSize: 2.33
-    minCoherence: 0
-    maxCoherence: 1
-    minSeperation: 0.58
-    maxSeperation: 1.46
+    minMass: 0
+    maxMass: 0
+    minFriction: 0
+    maxFriction: 0
     minSpeed: 0.0001
     maxSpeed: 0.1
     minNumber: 49609
@@ -1614,7 +1615,37 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6291d1cd9c2bea94482c4d7a30f5ae2e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Port: 9000
+  m_Port: 8080
+--- !u!114 &2095717746
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2095717740}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5ef1c2864bc69fa4d8a232a02b78a4ae, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  limits:
+    minSize: 1
+    maxSize: 4
+    minMass: 1
+    maxMass: 2
+    minFriction: 0.001
+    maxFriction: 1
+    minSpeed: 0.1
+    maxSpeed: 1
+    minNumber: 11373
+    maxNumber: 19066
+  numberMapper: 1
+  massMapper: 4
+  speedMapper: 4
+  frictionMapper: 13
+  colorMapper: 1
+  sizeMapper: 1
+  valueMapper: 1
 --- !u!1 &2122892233
 GameObject:
   m_ObjectHideFlags: 0

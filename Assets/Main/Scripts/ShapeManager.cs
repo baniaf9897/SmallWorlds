@@ -14,7 +14,6 @@ struct ShapeProps
     private ComputeShader m_computeTemplate;
     private Material m_matTemplate;
     private float m_quadSize;
-    private ShapePropertyDomains m_propertyDomains;
 
     private List<Material> m_materials;
     private List<Shape> m_shapes;
@@ -23,17 +22,18 @@ struct ShapeProps
     private List<ComputeBuffer> m_particlePropsBuffers;
     private List<ComputeBuffer> m_argsBuffers;
     private Mesh m_mesh;
+    private Mapper m_mapper;
 
     ComputeBuffer m_shapePropBuffer;
     ShapeProps[] m_shapeProps;
     int maxShapeCount = 50;
 
-    public ShapeManager(ComputeShader _computeShaderTmp, Material _matTmp, float _quadSize, ShapePropertyDomains _limits)
+    public ShapeManager(ComputeShader _computeShaderTmp, Material _matTmp, float _quadSize, Mapper _mapper)
     {
         m_computeTemplate = _computeShaderTmp;
         m_matTemplate = _matTmp;
         m_quadSize = _quadSize;
-        m_propertyDomains = _limits;
+        m_mapper = _mapper;
 
         Setup();
     }
@@ -69,13 +69,13 @@ struct ShapeProps
 
     }
 
-    void InitNewShape(float _value,  Vector3 _center, float _size,float _mass, ShapeGeometry _shape, float _coherence, float _seperation, float _speed, int _number)
+    void InitNewShape(float _value,  Vector3 _center, float _size,float _mass, ShapeGeometry _shape, Color _color, float _speed, float _friction, int _number)
     {
 
         Shape shapeProps = new Shape();
         shapeProps.value = _value;
         shapeProps.repitions = 1;
-        shapeProps.seed = Map(_value, 0.0f, 10000.0f, 0.0f, 1.0f);
+        shapeProps.seed = Random.Range(0.0f, 1.0f);//Map(_value, 0.0f, 10000.0f, 0.0f, 1.0f);
         shapeProps.center = _center;
         shapeProps.size = _size;
         shapeProps.shape = _shape;
@@ -89,7 +89,7 @@ struct ShapeProps
 
         shapeProps.rotation = Quaternion.identity;
 
-        Color color = Color.Lerp(Color.red, Color.blue, Map(_value,0.0f, 5000.0f, 0,1.0f));
+        Color color = _color;
 
         for (int i = 0; i < _number; i++)
         {
@@ -140,14 +140,11 @@ struct ShapeProps
         compute.SetBuffer(kernel, "_Properties", boidPropertiesBuffer);
         compute.SetBuffer(kernel, "_ShapeProps", m_shapePropBuffer);
 
-        
-
         compute.SetVector("center", _center);
         compute.SetFloat("centerMass", _mass);
 
         compute.SetFloat("speed", _speed);
-        compute.SetFloat("coherenceFactor", _coherence);
-        compute.SetFloat("seperationFactor", _seperation);
+
         compute.SetFloat("size", _size);
 
         material.SetBuffer("_Properties", boidPropertiesBuffer);
@@ -197,22 +194,21 @@ struct ShapeProps
 
     void CreateNewShape(AudioEvent _audioEvent)
     {
-        if(m_shapes.Count < maxShapeCount) { 
-           
-            float size = Map(_audioEvent.pitch, 0.0f,1000.0f, m_propertyDomains.minSize, m_propertyDomains.maxSize);
-            
-            float seperation = Map(_audioEvent.pitch, 0.0f, 1000.0f, m_propertyDomains.minSeperation, m_propertyDomains.maxSeperation);
-            float coherence = 0; 
+        if(m_shapes.Count < maxShapeCount) {
 
-            float speed = Map(_audioEvent.pitch, 0.0f, 1000.0f, m_propertyDomains.minSpeed, m_propertyDomains.maxSpeed);
-            int number = Map((int)_audioEvent.pitch, 0, 1000, m_propertyDomains.minNumber, m_propertyDomains.maxNumber);
+            float size = m_mapper.ValidateSize(_audioEvent);
+            float speed = m_mapper.ValidateSpeed(_audioEvent);
+            float friction = m_mapper.ValidateFriction(_audioEvent);
+            float mass = m_mapper.ValidateMass(_audioEvent);
+            int number = m_mapper.ValidateNumberofParticles(_audioEvent);
+            float value = m_mapper.ValidateValue(_audioEvent);
 
-            float mass = Random.Range(0.0f, 5.0f);
+            Color color = m_mapper.ValidateColor(_audioEvent);
 
             int r = Random.Range(0, 3);
             ShapeGeometry geometry = GetShapeByIndex(r);
 
-            InitNewShape(_audioEvent.pitch, new Vector3(0,0,0),size, mass,geometry,coherence,seperation,speed,number);
+            InitNewShape(value, new Vector3(0,0,0),size, mass,geometry,color ,speed, friction,number);
             Debug.Log("[ShapeManager] Create new Shape");
         }
     }
@@ -232,8 +228,8 @@ struct ShapeProps
                 x = (float)s.repitions / (float)max.repitions;
             }
 
- 
-            float value = Map(s.value, 0.0f, 5.0f, 1.5f, 2.5f);
+
+            float value = Random.Range(1.5f, 2.5f);//Map(s.value, 0.0f, 5.0f, 1.5f, 2.5f);
 
             float alpha = value * Mathf.PI;
             float r =  (1.0f - x) * 8.0f;
@@ -254,10 +250,7 @@ struct ShapeProps
 
     }
 
-    public float Map(float value, float from1, float to1, float from2, float to2)
-    {
-        return (value - from1) / (to1 - from1) * (to2 - from2) + from2;
-    }
+ 
 
     public int Map(int value, int from1, int to1, int from2, int to2)
     {
@@ -305,6 +298,7 @@ struct ShapeProps
 
 
             m_shaders[i].SetFloat("speed", s.speed);
+
             m_shaders[i].SetFloat("size", s.size);
             m_shaders[i].SetBuffer(kernel, "_ShapeProps", m_shapePropBuffer);
             m_shaders[i].SetInt("maxShapeCount", maxShapeCount);
