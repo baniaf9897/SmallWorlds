@@ -36,8 +36,8 @@ float3 center;
 float speed;
 float size;
 int maxShapeCount;
-float massCenter = 1.0;
-float massChange = 0.9999;
+float centerMass;
+float gravityFactor;
 
 float4x4 rotMat;
 
@@ -122,11 +122,11 @@ float4x4 GetTransformationMatrix(float3 pos, float3 scale) {
 }
 
 float CalcMass(float3 pos, float mass) {
-    return mass + noise3D(pos) * massChange;
+    return mass + noise3D(pos);
 }
 
 float4 CalcColor(float3 pos, float4 color) {
-     color.r *= (noise3D(pos) + 1) / 2;
+    // color.r *= (noise3D(pos) + 1) / 2;
      return color;
 }
 
@@ -134,34 +134,31 @@ float4 CalcColor(float3 pos, float4 color) {
 
 float3 GetGravityForce(float3 pos, float mass1, float mass2, float dist) {
 
-    if (dist > 10) {
-        return -1*pos;
-    };
   
     float3 force = float3(0, 0, 0);
 
     for (int i = 0; i < maxShapeCount; i++) {
         if (_ShapeProps[i].active == 1) {
-               float _dist =  length(_ShapeProps[i].center - pos);  
+               float _dist =  length(_ShapeProps[i].center - pos) - 1;  
        
                float3 dir = (_ShapeProps[i].center - pos) / _dist;
                force += ((mass1 * _ShapeProps[i].mass) / (_dist * _dist)) * dir;
         }
-    }
+    } 
 
     force /= length(force);
     force *= 0.001;
 
-    if (dist < 0)
-        return force;
+    //if (dist < 0)
+    //    return float3(0,0,0);
  
-    float3 dir = (center - pos) / dist;
-    return   force + ((mass1 * mass2) /   (dist)) *  dir; 
+    float3 dir = (center - pos)/length(center-pos); 
+    return (center - pos) * dist;//  force + ((mass1 * mass2) /dist) *  dir;// (center - pos) * dist * 0.05; 
     
 }       
 
-float3 GetSteeringForce(float3 pos , float mass) {
-    return float3(noise3D(pos), noise3D(float3(pos.xzy)), noise3D(float3(pos.zxy))) * mass;
+float3 GetSteeringForce(float3 pos , float mass, float steeringFactor) {
+    return float3(noise3D(pos), noise3D(float3(pos.xzy)), noise3D(float3(pos.zxy))) * steeringFactor;
 }
 
 
@@ -169,16 +166,17 @@ float3 applyForces(float3 pos, float mass1, float mass2, float dist, float frict
     float3 acceleration = float3(0, 0, 0);
     
     //gravity
-    acceleration += GetGravityForce(pos, mass1, mass2, dist);
+    acceleration += GetGravityForce(pos, mass1, mass2, dist) * gravityFactor;
+
 
     //random steering => perlin noise
-    acceleration += GetSteeringForce(pos, mass1);
-
+    acceleration += GetSteeringForce(pos, mass1, frictionCoefficient) ;
+    
     //friction
-    float3 friction = frictionCoefficient * acceleration / length(acceleration);
-    acceleration += friction;
+    //float3 friction = frictionCoefficient * acceleration / length(acceleration);
+    //acceleration += friction;
 
-    acceleration = limit(acceleration, 0.3);
+   // acceleration = limit(acceleration, 0.3);
 
 
     return acceleration;
@@ -199,7 +197,7 @@ void CSCube(uint3 id : SV_DispatchThreadID)
 
     float dist = CalcDistanceCube(center, pos);
 
-    vel += applyForces(pos, mass, 1, dist, friction);
+    vel += applyForces(pos, mass, centerMass, dist, friction);
     vel = limit(vel, 0.3);
 
     pos += vel * speed;
@@ -225,7 +223,7 @@ void CSSphere(uint3 id : SV_DispatchThreadID)
 
     float dist = CalcDistanceSphere(center, pos);
  
-    vel += applyForces(pos, mass, 1, dist, friction);
+    vel += applyForces(pos, mass, centerMass, dist, friction);
     vel = limit(vel, 0.3);
 
     pos += vel * speed;
@@ -253,7 +251,7 @@ void CSCapsule(uint3 id : SV_DispatchThreadID)
 
     float dist = CalcDistanceCapsule(center, pos);
 
-    vel += applyForces(pos, mass, 1, dist, friction);
+    vel += applyForces(pos, mass, centerMass, dist, friction);
     vel = limit(vel, 0.3);
 
     pos += vel * speed;
@@ -280,7 +278,7 @@ void CSPyramid(uint3 id : SV_DispatchThreadID)
 
     float dist = CalcDistancePyramid(center, pos);
 
-    vel += applyForces(pos, mass, 1, dist, friction);
+    vel += applyForces(pos, mass, centerMass, dist, friction);
     vel = limit(vel, 0.3);
 
     pos += vel * speed;

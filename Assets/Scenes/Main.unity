@@ -1479,22 +1479,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3ef12ed769c9b6142abed63ad0774d35, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  rapidMode: 0
-  rapidModeProgress: 0.64
   computeShaderTmp: {fileID: 7200000, guid: f4a318dd9696c0340a01f2afbee0cb11, type: 3}
   materialTmp: {fileID: 2100000, guid: b9d5bfdcdb68f1f469630a330cfbac6c, type: 2}
-  limits:
-    minSize: 1.45
-    maxSize: 2.33
-    minMass: 0
-    maxMass: 0
-    minFriction: 0
-    maxFriction: 0
-    minSpeed: 0.0001
-    maxSpeed: 0.1
-    minNumber: 49609
-    maxNumber: 57685
-  quadSize: 0.05
+  quadSize: 0.03
+  m_shapeManager: {fileID: 0}
+  globalGravity: 0.42
 --- !u!82 &2095717743
 AudioSource:
   m_ObjectHideFlags: 0
@@ -1615,7 +1604,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6291d1cd9c2bea94482c4d7a30f5ae2e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Port: 8080
+  m_Port: 3334
 --- !u!114 &2095717746
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1630,19 +1619,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   limits:
     minSize: 1
-    maxSize: 4
-    minMass: 1
-    maxMass: 2
-    minFriction: 0.001
-    maxFriction: 1
+    maxSize: 3
+    minMass: 5
+    maxMass: 5
+    minFriction: 0.01
+    maxFriction: 0.1
     minSpeed: 0.1
-    maxSpeed: 1
-    minNumber: 11373
-    maxNumber: 19066
+    maxSpeed: 0.5
+    minNumber: 34297
+    maxNumber: 56546
   numberMapper: 1
-  massMapper: 4
-  speedMapper: 4
-  frictionMapper: 13
+  massMapper: 1
+  speedMapper: 1
+  frictionMapper: 1
   colorMapper: 1
   sizeMapper: 1
   valueMapper: 1

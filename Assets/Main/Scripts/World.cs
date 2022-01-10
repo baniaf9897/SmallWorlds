@@ -6,26 +6,25 @@ using UnityEngine;
 
 public class World : MonoBehaviour
 {
-    public bool rapidMode = false;
-
-    [Range(0.0f, 1.0f)]
-    public float rapidModeProgress = 0.0f;
 
     public ComputeShader computeShaderTmp;
     public Material materialTmp;
 
-    public ShapePropertyDomains limits;
     [Range(0f, 1f)]
     public float quadSize = 0.5f;
 
-    private ShapeManager m_shapeManager;
+    public ShapeManager m_shapeManager;
     public AudioManager m_audioManager;
     private InteractionManager m_interactionManager;
 
     ixAudioOSCReceiver m_audioOSCReceiver;
     Mapper m_mapper;
- 
-     void Start()
+
+
+    [Range(0.001f, 1.0f)]
+    public float globalGravity = 1.0f;
+
+    void Start()
     {
         Setup();
     }
@@ -45,18 +44,15 @@ public class World : MonoBehaviour
         m_audioManager = new AudioManager();
         m_interactionManager = new InteractionManager();
 
-
         Debug.Log("[World] Setup finished");
     }
 
     private void OnValidate()
     {
         Setup();
+        m_shapeManager.SetGlobalGravity(globalGravity);
 
-        if (rapidMode)
-        {
-            RunRapidMode();
-        };
+
 
     }
 
@@ -69,7 +65,7 @@ public class World : MonoBehaviour
     {
 
         //get Data
-        List<float> data = m_audioManager.GetAudioData(); 
+       /* List<float> data = m_audioManager.GetAudioData(); 
 
         for (int i = 0; i < rapidModeProgress * data.Count; i++)
         {
@@ -78,20 +74,17 @@ public class World : MonoBehaviour
           //  m_shapeManager.Update(audioEvent);
         }
 
-        Debug.Log("[World] Rapid Mode finished");
+        Debug.Log("[World] Rapid Mode finished");*/
 
     }
 
     void Update()
     {
-        if (!rapidMode)
-        {
-            m_audioManager.Update();
-            m_shapeManager.Update(ixAudioOSCReceiver.currentAudioEvent);
-            //m_shapeManager.Update(m_audioManager.GetCurrentAudioEvent());
-        }
-        else
-            m_shapeManager.Draw();
+
+        m_audioManager.Update();
+        m_shapeManager.Update(ixAudioOSCReceiver.currentAudioEvent);
+        //m_shapeManager.Update(m_audioManager.GetCurrentAudioEvent());
+      
     }
 
 }

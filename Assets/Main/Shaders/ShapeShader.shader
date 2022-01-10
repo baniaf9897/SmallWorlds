@@ -109,7 +109,7 @@ Shader "Custom/ShapeShader"
                 return i.color * i.diff * 0.1;
             }
 
-            return i.color * (i.diff + float4(0.1,0.1,0.1,0.1)) ;
+            return i.color *  i.diff;
          }
          ENDCG
      }

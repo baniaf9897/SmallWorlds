@@ -65,5 +65,6 @@ public class Shape
     public float mass;
     public float speed;
     public float size;
+    public float gravityFactor;
 
 }

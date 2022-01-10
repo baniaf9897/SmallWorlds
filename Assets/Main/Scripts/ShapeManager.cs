@@ -28,6 +28,12 @@ struct ShapeProps
     ShapeProps[] m_shapeProps;
     int maxShapeCount = 50;
 
+    float creationCooldown = 2.0f;
+    float timeSinceCreation = 0.0f;
+
+    float globalGravityFactor = 1.0f;
+
+
     public ShapeManager(ComputeShader _computeShaderTmp, Material _matTmp, float _quadSize, Mapper _mapper)
     {
         m_computeTemplate = _computeShaderTmp;
@@ -38,7 +44,11 @@ struct ShapeProps
         Setup();
     }
 
-    
+    public void SetGlobalGravity(float gravity)
+    {
+        globalGravityFactor = gravity;
+    }
+
     void Setup()
     {
         m_mesh = CreateQuadMesh(m_quadSize,m_quadSize);
@@ -85,7 +95,7 @@ struct ShapeProps
         shapeProps.particleProps = new List<ParticleProps>();
         shapeProps.args = new uint[5] { 0, 0, 0, 0, 0 };
         shapeProps.mass = _mass;
-
+        shapeProps.gravityFactor = globalGravityFactor;
 
         shapeProps.rotation = Quaternion.identity;
 
@@ -95,15 +105,15 @@ struct ShapeProps
         {
             Particle p = new Particle();
 
-            Vector3 randomOffset = new Vector3(Random.Range(-0.01f, 0.01f), Random.Range(-0.01f, 0.01f), Random.Range(-0.01f, 0.01f));
+            Vector3 randomOffset = new Vector3(Random.Range(-0.1f, 0.1f), Random.Range(-0.1f, 0.1f), Random.Range(-0.1f, 0.1f));
 
             p.pos = _center + randomOffset;// + new Vector3(Random.Range(-0.1f, 0.1f), Random.Range(-0.1f, 0.1f), Random.Range(-0.1f, 0.1f));
             p.scale = Vector3.one;
             p.velocity = Vector3.zero;//new Vector3(Random.Range(-0.01f, 0.01f), Random.Range(-0.01f, 0.01f), Random.Range(-0.01f, 0.01f));
             p.acceleration = Vector3.zero;//new Vector3(Random.Range(-0.01f, 0.01f), Random.Range(-0.01f, 0.01f), Random.Range(-0.01f, 0.01f));
             p.color = color;
-            p.mass = Random.Range(0.0f, 1.0f);
-            p.friction = Random.Range(0.0f, 1.0f);
+            p.mass = _mass;
+            p.friction = _friction;
 
             shapeProps.particles.Add(p);
 
@@ -160,6 +170,7 @@ struct ShapeProps
 
     public void Update(AudioEvent _currentAudioEvent)
     {
+        timeSinceCreation += Time.deltaTime;
         UpdateShapes(_currentAudioEvent);
         RunComputeShaders();
  
@@ -205,11 +216,22 @@ struct ShapeProps
 
             Color color = m_mapper.ValidateColor(_audioEvent);
 
-            int r = Random.Range(0, 3);
-            ShapeGeometry geometry = GetShapeByIndex(r);
+     
 
-            InitNewShape(value, new Vector3(0,0,0),size, mass,geometry,color ,speed, friction,number);
-            Debug.Log("[ShapeManager] Create new Shape");
+            if (value > 0 && _audioEvent.peakEnergy > 0.3f && timeSinceCreation > creationCooldown) {
+                timeSinceCreation = 0.0f;
+                int r = Random.Range(0, 3);
+                ShapeGeometry geometry = GetShapeByIndex(r);
+
+                InitNewShape(value, new Vector3(0,0,0),size, mass,geometry,color ,speed, friction,number);
+                Debug.Log("[ShapeManager] Create new Shape");
+                Debug.Log("Size " + size);
+                Debug.Log("speed " + speed);
+                Debug.Log("friction " + friction);
+                Debug.Log("mass " + mass);
+                Debug.Log("number " + number);
+                Debug.Log("value " + value);
+            }
         }
     }
 
@@ -229,7 +251,8 @@ struct ShapeProps
             }
 
 
-            float value = Random.Range(1.5f, 2.5f);//Map(s.value, 0.0f, 5.0f, 1.5f, 2.5f);
+ 
+            float value = m_mapper.Map(s.value, 100.0f, 1000.0f, 1.5f, 2.5f);
 
             float alpha = value * Mathf.PI;
             float r =  (1.0f - x) * 8.0f;
@@ -298,6 +321,7 @@ struct ShapeProps
 
 
             m_shaders[i].SetFloat("speed", s.speed);
+            m_shaders[i].SetFloat("gravityFactor", s.gravityFactor);
 
             m_shaders[i].SetFloat("size", s.size);
             m_shaders[i].SetBuffer(kernel, "_ShapeProps", m_shapePropBuffer);

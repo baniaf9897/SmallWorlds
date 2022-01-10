@@ -2,9 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-
-
-
 [System.Serializable]
 public struct ShapePropertyDomains
 {
@@ -13,9 +10,9 @@ public struct ShapePropertyDomains
     [Range(0.1f, 5.0f)]
     public float maxSize;
 
-    [Range(0.0f, 2.0f)]
+    [Range(0.0f, 20.0f)]
     public float minMass;
-    [Range(0.0f, 2.0f)]
+    [Range(0.0f, 20.0f)]
     public float maxMass;
 
     [Range(0.0f, 2.0f)]
@@ -48,21 +45,6 @@ public class Mapper : MonoBehaviour
 
     public ParamId valueMapper;
 
-
-    // Start is called before the first frame update
-    void Start()
-    {
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
-
-
-
-
     private void OnValidate()
     {
        /* AudioEvent e = new AudioEvent();
@@ -86,12 +68,12 @@ public class Mapper : MonoBehaviour
     }
 
 
-    private float[] GetParamLimit(ParamId paramID)
+    public float[] GetParamLimit(ParamId paramID)
     {
         float[] bounds = new float[2];
    
         bounds[0] = 100.0f;
-        bounds[1] = 20000.0f;
+        bounds[1] = 1000.0f;
 
         return bounds;
     }
