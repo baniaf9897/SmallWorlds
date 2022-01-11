@@ -1483,7 +1483,8 @@ MonoBehaviour:
   materialTmp: {fileID: 2100000, guid: b9d5bfdcdb68f1f469630a330cfbac6c, type: 2}
   quadSize: 0.03
   m_shapeManager: {fileID: 0}
-  globalGravity: 0.42
+  globalGravity: 1
+  globalAttraction: 0
 --- !u!82 &2095717743
 AudioSource:
   m_ObjectHideFlags: 0
@@ -1618,22 +1619,22 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   limits:
-    minSize: 1
-    maxSize: 3
+    minSize: 0.5
+    maxSize: 5
     minMass: 5
     maxMass: 5
-    minFriction: 0.01
-    maxFriction: 0.1
-    minSpeed: 0.1
-    maxSpeed: 0.5
+    minFriction: 0.001
+    maxFriction: 0.01
+    minSpeed: 0.01
+    maxSpeed: 0.1
     minNumber: 34297
     maxNumber: 56546
   numberMapper: 1
   massMapper: 1
   speedMapper: 1
   frictionMapper: 1
-  colorMapper: 1
-  sizeMapper: 1
+  colorMapper: 4
+  sizeMapper: 2
   valueMapper: 1
 --- !u!1 &2122892233
 GameObject:

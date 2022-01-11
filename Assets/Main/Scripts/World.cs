@@ -21,8 +21,12 @@ public class World : MonoBehaviour
     Mapper m_mapper;
 
 
-    [Range(0.001f, 1.0f)]
+    [Range(0.0f, 1.0f)]
     public float globalGravity = 1.0f;
+
+
+    [Range(0.0f, 1.0f)]
+    public float globalAttraction = 1.0f;
 
     void Start()
     {
@@ -51,6 +55,7 @@ public class World : MonoBehaviour
     {
         Setup();
         m_shapeManager.SetGlobalGravity(globalGravity);
+        m_shapeManager.SetGlobalAttraction(globalAttraction);
 
 
 

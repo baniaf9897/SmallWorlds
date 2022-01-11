@@ -32,7 +32,7 @@ struct ShapeProps
     float timeSinceCreation = 0.0f;
 
     float globalGravityFactor = 1.0f;
-
+    float globalAttractionFactor = 1.0f;
 
     public ShapeManager(ComputeShader _computeShaderTmp, Material _matTmp, float _quadSize, Mapper _mapper)
     {
@@ -48,6 +48,12 @@ struct ShapeProps
     {
         globalGravityFactor = gravity;
     }
+
+    public void SetGlobalAttraction(float attraction)
+    {
+        globalAttractionFactor = attraction;
+    }
+
 
     void Setup()
     {
@@ -96,7 +102,7 @@ struct ShapeProps
         shapeProps.args = new uint[5] { 0, 0, 0, 0, 0 };
         shapeProps.mass = _mass;
         shapeProps.gravityFactor = globalGravityFactor;
-
+        shapeProps.attractionFactor = globalAttractionFactor;
         shapeProps.rotation = Quaternion.identity;
 
         Color color = _color;
@@ -152,7 +158,8 @@ struct ShapeProps
 
         compute.SetVector("center", _center);
         compute.SetFloat("centerMass", _mass);
-
+        compute.SetFloat("gravityFactor", shapeProps.gravityFactor);
+        compute.SetFloat("attractionFactor", shapeProps.attractionFactor);
         compute.SetFloat("speed", _speed);
 
         compute.SetFloat("size", _size);
@@ -237,13 +244,18 @@ struct ShapeProps
 
     void UpdateShape(int index)
     {
+        m_shapes[index].size += 0.01f;
         m_shapes[index].repitions++; 
         Shape max = GetMostRepititiveShape();
 
+
+
          for (int i = 0; i < m_shapes.Count; i++)
         {
+
             float x = 0.0f;
             Shape s = m_shapes[i];
+            s.size -= 0.001f;
 
             if (max.repitions > 0.0f)
             {
@@ -322,10 +334,13 @@ struct ShapeProps
 
             m_shaders[i].SetFloat("speed", s.speed);
             m_shaders[i].SetFloat("gravityFactor", s.gravityFactor);
+            m_shaders[i].SetFloat("attractionFactor", s.attractionFactor);
 
             m_shaders[i].SetFloat("size", s.size);
             m_shaders[i].SetBuffer(kernel, "_ShapeProps", m_shapePropBuffer);
             m_shaders[i].SetInt("maxShapeCount", maxShapeCount);
+
+            m_shaders[i].SetVector("_Time", Shader.GetGlobalVector("_Time"));
 
             m_shaders[i].Dispatch(kernel, Mathf.CeilToInt(s.particles.Count / 128), 1, 1);
             m_shapes[i] = s;

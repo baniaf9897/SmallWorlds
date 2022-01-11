@@ -70,6 +70,12 @@ public class Mapper : MonoBehaviour
 
     public float[] GetParamLimit(ParamId paramID)
     {
+
+        if(paramID == ParamId.peakEnergy)
+        {
+            return new float[2]{0.0f,1.0f};
+        }
+
         float[] bounds = new float[2];
    
         bounds[0] = 100.0f;
