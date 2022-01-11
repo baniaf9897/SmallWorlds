@@ -5,8 +5,8 @@ namespace OscCore
 {
     public sealed unsafe partial class OscMessageValues
     {
-        const int k_ResizeByteHeadroom = 1024;    
-        
+        const int k_ResizeByteHeadroom = 1024;
+
         /// <summary>
         /// Read a blob element.
         /// Checks the element type before reading, and does nothing if the element is not a blob.
@@ -35,10 +35,51 @@ namespace OscCore
 
                     Buffer.BlockCopy(m_SharedBuffer, dataStart, copyTo, copyOffset, size);
                     return size;
-                default: 
+                default:
                     return default;
             }
         }
 
+        // Added by MM 09 Jan 2022
+        public int GetBlobSize(int index)
+        {
+#if OSCCORE_SAFETY_CHECKS
+            if (OutOfBounds(index)) return 0;
+#endif
+            switch (Tags[index])
+            {
+                case TypeTag.Blob:
+                    return ReadIntIndex(Offsets[index]);
+                default:
+                    break;
+            }
+            return 0;
+        }
+
+        // Directly copy a blob into an array of floats
+        // resize the target vector if necessary
+        // return number of FLOATS copied
+        public int ReadBlobAsFloatArray(int index, ref float[] target)
+        {
+#if OSCCORE_SAFETY_CHECKS
+            if (OutOfBounds(index)) return 0;
+#endif
+            switch (Tags[index])
+            {
+                case TypeTag.Blob:
+                    int offset = Offsets[index];
+                    int nBytes = ReadIntIndex(offset);
+                    int nFloats = nBytes / sizeof(float);
+                    int dataStart = offset + 4;    // skip the size int
+                    if (target == null || target.Length <= nBytes)
+                        target = new float[nFloats];
+
+                    Buffer.BlockCopy(m_SharedBuffer, dataStart, target, 0, nBytes);
+                    return nFloats;
+                default:
+                    break;
+            }
+            return 0;
+        }
     }
 }

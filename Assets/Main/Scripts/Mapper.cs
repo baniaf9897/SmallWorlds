@@ -71,17 +71,22 @@ public class Mapper : MonoBehaviour
     public float[] GetParamLimit(ParamId paramID)
     {
 
-        if(paramID == ParamId.peakEnergy)
+        return new float[2] {0.0f,1.0f};
+
+       /* if(paramID == ParamId.peakEnergy || paramID == ParamId.rootMeanSquare)
         {
             return new float[2]{0.0f,1.0f};
         }
-
+        else if(paramID == ParamId.spectralCentroid)
+        {
+            return new float[2] { 0.0f, 150.0f };
+        }
         float[] bounds = new float[2];
    
         bounds[0] = 100.0f;
         bounds[1] = 1000.0f;
 
-        return bounds;
+        return bounds;*/
     }
 
     public float Map(float value, float from1, float to1, float from2, float to2)
@@ -146,7 +151,7 @@ public class Mapper : MonoBehaviour
         float[] bounds = GetParamLimit(frictionMapper);
         float param = audioEvent[(int)frictionMapper];
 
-        return Color.Lerp(Color.red, Color.blue, Map(param, bounds[0], bounds[1],0,1));
+        return Color.Lerp(Color.red, Color.blue, Map(param, bounds[0], bounds[1],0.0f,1.0f));
     }
 
 }

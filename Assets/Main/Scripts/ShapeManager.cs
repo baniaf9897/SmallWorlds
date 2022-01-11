@@ -104,6 +104,7 @@ struct ShapeProps
         shapeProps.gravityFactor = globalGravityFactor;
         shapeProps.attractionFactor = globalAttractionFactor;
         shapeProps.rotation = Quaternion.identity;
+        shapeProps.lastUpdated = 0.0f;
 
         Color color = _color;
 
@@ -188,7 +189,16 @@ struct ShapeProps
     { 
         for (int i = 0; i < m_shapes.Count; i++)
         {
-            Graphics.DrawMeshInstancedIndirect(m_mesh, 0, m_materials[i], m_shapes[i].bounds, m_argsBuffers[i]);
+            m_shapes[i].lastUpdated += Time.deltaTime;
+            if(m_shapes[i].lastUpdated > 10.0f)
+            {
+                m_shapes[i].size -= 0.001f;
+            }
+            if (m_shapes[i].size < 0.0f)
+                DeleteShape(i);
+
+            if (m_shapes[i].repitions > 0)
+                Graphics.DrawMeshInstancedIndirect(m_mesh, 0, m_materials[i], m_shapes[i].bounds, m_argsBuffers[i]);
         };
     }
 
@@ -196,7 +206,7 @@ struct ShapeProps
     void UpdateShapes(AudioEvent _currentAudioEvent)
     {
 
-        float threshold = 50.0f;
+        float threshold = 0.001f;
         for (int i = 0; i < m_shapes.Count; i++)
         {
              if (m_shapes[i].value - threshold < _currentAudioEvent.pitch && m_shapes[i].value + threshold > _currentAudioEvent.pitch)
@@ -242,9 +252,35 @@ struct ShapeProps
         }
     }
 
+    void DeleteShape(int index)
+    {
+        Debug.Log("Delete shape " + index);
+       // m_shapes[index].repitions = 0;
+
+        m_shapes.RemoveAt(index);
+        m_materials.RemoveAt(index);
+
+        m_shaders.RemoveAt(index);
+
+        m_particleBuffers[index].Release();
+        m_particleBuffers.RemoveAt(index);
+
+        m_particlePropsBuffers[index].Release();
+        m_particlePropsBuffers.RemoveAt(index);
+
+        m_argsBuffers[index].Release();
+        m_argsBuffers.RemoveAt(index);
+
+        //TODO also delete from allshapeprops array 
+        Debug.Log("finished deletion");
+
+    }
     void UpdateShape(int index)
     {
-        m_shapes[index].size += 0.01f;
+       // if(m_shapes[index].size < m_mapper.limits.maxSize)
+          //  m_shapes[index].size += 0.00001f;
+
+        m_shapes[index].lastUpdated = 0.0f ;
         m_shapes[index].repitions++; 
         Shape max = GetMostRepititiveShape();
 
@@ -255,16 +291,16 @@ struct ShapeProps
 
             float x = 0.0f;
             Shape s = m_shapes[i];
-            s.size -= 0.001f;
-
+                 
             if (max.repitions > 0.0f)
             {
                 x = (float)s.repitions / (float)max.repitions;
             }
 
 
- 
-            float value = m_mapper.Map(s.value, 100.0f, 1000.0f, 1.5f, 2.5f);
+            float[] bounds = m_mapper.GetParamLimit(m_mapper.numberMapper);
+            float value = m_mapper.Map(s.value, bounds[0], bounds[1], 1.5f, 2.5f);
+            Debug.Log(value);
 
             float alpha = value * Mathf.PI;
             float r =  (1.0f - x) * 8.0f;
@@ -319,31 +355,34 @@ struct ShapeProps
     {
         for (int i = 0; i < m_shapes.Count; i++)
         {
-            Shape s = m_shapes[i];
-            int kernel = GetIndexByShape(s.shape);
-            m_shaders[i].SetVector("center", s.center);
+            if(m_shapes[i].repitions > 0) { 
+          
+                Shape s = m_shapes[i];
+                int kernel = GetIndexByShape(s.shape);
+                m_shaders[i].SetVector("center", s.center);
 
-            s.bounds = new Bounds(s.center, Vector3.one * 10.0f);
+                s.bounds = new Bounds(s.center, Vector3.one * 10.0f);
 
-            Quaternion q = Quaternion.identity;
-            q.SetLookRotation(s.center - Camera.main.transform.position);
+                Quaternion q = Quaternion.identity;
+                q.SetLookRotation(s.center - Camera.main.transform.position);
 
-            Matrix4x4 rot = Matrix4x4.TRS(Vector3.zero, q, Vector3.one);
-            m_shaders[i].SetMatrix("rotMat", rot);
+                Matrix4x4 rot = Matrix4x4.TRS(Vector3.zero, q, Vector3.one);
+                m_shaders[i].SetMatrix("rotMat", rot);
 
 
-            m_shaders[i].SetFloat("speed", s.speed);
-            m_shaders[i].SetFloat("gravityFactor", s.gravityFactor);
-            m_shaders[i].SetFloat("attractionFactor", s.attractionFactor);
+                m_shaders[i].SetFloat("speed", s.speed);
+                m_shaders[i].SetFloat("gravityFactor", s.gravityFactor);
+                m_shaders[i].SetFloat("attractionFactor", s.attractionFactor);
 
-            m_shaders[i].SetFloat("size", s.size);
-            m_shaders[i].SetBuffer(kernel, "_ShapeProps", m_shapePropBuffer);
-            m_shaders[i].SetInt("maxShapeCount", maxShapeCount);
+                m_shaders[i].SetFloat("size", s.size);
+                m_shaders[i].SetBuffer(kernel, "_ShapeProps", m_shapePropBuffer);
+                m_shaders[i].SetInt("maxShapeCount", maxShapeCount);
 
-            m_shaders[i].SetVector("_Time", Shader.GetGlobalVector("_Time"));
+                m_shaders[i].SetVector("_Time", Shader.GetGlobalVector("_Time"));
 
-            m_shaders[i].Dispatch(kernel, Mathf.CeilToInt(s.particles.Count / 128), 1, 1);
-            m_shapes[i] = s;
+                m_shaders[i].Dispatch(kernel, Mathf.CeilToInt(s.particles.Count / 128), 1, 1);
+                m_shapes[i] = s;
+            }
         }
     }
 

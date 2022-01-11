@@ -67,5 +67,6 @@ public class Shape
     public float size;
     public float gravityFactor;
     public float attractionFactor;
+    public float lastUpdated;
 
 }

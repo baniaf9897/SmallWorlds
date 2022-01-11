@@ -6,6 +6,7 @@ using UnityEngine.Events;
 
 public enum ParamId
 {
+    time,
     rootMeanSquare,
 	pitch,
 	peakEnergy,
@@ -43,24 +44,28 @@ public class ixAudioOSCReceiver : MonoBehaviour
 
         void ReadValuesFromOSC(OscMessageValues values)
         {
-            for (int i = 0; i < (int)ParamId.COUNT; i++)
+           /* for (int i = 0; i < (int)ParamId.COUNT; i++) { 
                 m_params[i] = values.ReadFloatElement(i);
+                Debug.Log(values.ReadFloatElement(i));
+            }*/
+            values.ReadBlobAsFloatArray(0,ref m_params);
 
+            currentAudioEvent.time =                    m_params[0];
+            currentAudioEvent.rootMeanSquare =          m_params[1];
+            currentAudioEvent.pitch =                   m_params[2];
+            currentAudioEvent.peakEnergy =              m_params[3];
+            currentAudioEvent.zeroCrossingRate =        m_params[4];
+            currentAudioEvent.spectralCentroid =        m_params[5];
+            currentAudioEvent.spectralCrest =           m_params[6];
+            currentAudioEvent.spectralFlatness =        m_params[7];
+            currentAudioEvent.spectralRolloff =         m_params[8];
+            currentAudioEvent.spectralKurtosis =        m_params[9];
+            currentAudioEvent.energyDifference =        m_params[10];
+            currentAudioEvent.spectralDifference =      m_params[11];
+            currentAudioEvent.spectralDifferenceHWR =   m_params[12];
+            currentAudioEvent.complexSpectralDifference = m_params[13];
+            currentAudioEvent.highFrequencyContent =     m_params[14];
 
-            currentAudioEvent.rootMeanSquare = m_params[0];
-            currentAudioEvent.pitch = m_params[1];
-            currentAudioEvent.peakEnergy = m_params[2];
-            currentAudioEvent.zeroCrossingRate = m_params[3];
-            currentAudioEvent.spectralCentroid = m_params[4];
-            currentAudioEvent.spectralCrest = m_params[5];
-            currentAudioEvent.spectralFlatness = m_params[6];
-            currentAudioEvent.spectralRolloff = m_params[7];
-            currentAudioEvent.spectralKurtosis = m_params[8];
-            currentAudioEvent.energyDifference = m_params[9];
-            currentAudioEvent.spectralDifference = m_params[10];
-            currentAudioEvent.spectralDifferenceHWR = m_params[11];
-            currentAudioEvent.complexSpectralDifference = m_params[12];
-            currentAudioEvent.highFrequencyContent = m_params[13];
         }
 
         void MainThreadMethod()
