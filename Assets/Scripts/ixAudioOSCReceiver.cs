@@ -28,6 +28,7 @@ public class ixAudioOSCReceiver : MonoBehaviour
 {
 
     public static AudioEvent currentAudioEvent;
+    public static int currentPolyphonicPitch;
 
     class FloatParamsCallback
     {
@@ -40,6 +41,30 @@ public class ixAudioOSCReceiver : MonoBehaviour
           //  server.TryAddMethod("/params", ReadValuesFromOSC);
             // Double-thread version..
             server.TryAddMethodPair("/params", ReadValuesFromOSC, MainThreadMethod);
+            server.TryAddMethodPair("/pp", ReadPolyphonicPitchValuesFromOSC, MainThreadMethod);
+        }
+
+        void ReadPolyphonicPitchValuesFromOSC(OscMessageValues values)
+        {
+            float[] temp = new float[(128)];
+
+            values.ReadBlobAsFloatArray(0, ref temp);
+            float max = 0.0f;
+            int maxIndex = 0;
+
+            for(int i = 0; i < temp.Length; i++)
+            {
+                if(temp[i] > max)
+                {
+                    max = temp[i];
+                    maxIndex = i;
+                }
+            }
+
+            currentPolyphonicPitch = maxIndex;
+            //MidiToNote(maxIndex, ref currentPolyphonicPitch);
+
+
         }
 
         void ReadValuesFromOSC(OscMessageValues values)
@@ -82,6 +107,60 @@ public class ixAudioOSCReceiver : MonoBehaviour
         m_callback = new FloatParamsCallback(receiver.Server);
 
         currentAudioEvent = new AudioEvent();
+        currentPolyphonicPitch = -1;
       
     }
+
+
+    public static void MidiToNote(int midi, ref string s)
+    {
+        int note = midi % 12;
+
+        switch (note)
+        {
+            case 0:
+                s = "C";
+                break;
+            case 1:
+                s = "C#";
+                break;
+            case 2:
+                s = "D";
+                break;
+            case 3:
+                s = "D#";
+                break;
+            case 4:
+                s = "E";
+                break;
+            case 5:
+                s = "F";
+                break;
+            case 6:
+                s = "F#";
+                break;
+            case 7:
+                s = "G";
+                break;
+            case 8:
+                s = "G#";
+                break;
+            case 9:
+                s = "A";
+                break;
+            case 10:
+                s = "Bb";
+                break;
+            case 11:
+                s = "B";
+                break;
+            default:
+                break;
+
+        }
+
+        //int octave = (midi - 12) / 12;
+        //s += octave.ToString();
+    }
+
 }

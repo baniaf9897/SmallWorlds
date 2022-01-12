@@ -1483,7 +1483,7 @@ MonoBehaviour:
   materialTmp: {fileID: 2100000, guid: b9d5bfdcdb68f1f469630a330cfbac6c, type: 2}
   quadSize: 0.03
   m_shapeManager: {fileID: 0}
-  globalGravity: 0.48
+  globalGravity: 0
   globalAttraction: 0
 --- !u!82 &2095717743
 AudioSource:
@@ -1629,9 +1629,9 @@ MonoBehaviour:
     maxSpeed: 0.1
     minNumber: 34297
     maxNumber: 56546
-  numberMapper: 2
+  numberMapper: 1
   massMapper: 1
-  speedMapper: 14
+  speedMapper: 3
   frictionMapper: 11
   colorMapper: 5
   sizeMapper: 1

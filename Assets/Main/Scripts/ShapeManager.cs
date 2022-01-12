@@ -101,7 +101,7 @@ struct ShapeProps
         shapeProps.particleProps = new List<ParticleProps>();
         shapeProps.args = new uint[5] { 0, 0, 0, 0, 0 };
         shapeProps.mass = _mass;
-        shapeProps.gravityFactor = globalGravityFactor;
+        shapeProps.gravityFactor = 0.0f;
         shapeProps.attractionFactor = globalAttractionFactor;
         shapeProps.rotation = Quaternion.identity;
         shapeProps.lastUpdated = 0.0f;
@@ -176,10 +176,10 @@ struct ShapeProps
 
     }
 
-    public void Update(AudioEvent _currentAudioEvent)
+    public void Update(AudioEvent _currentAudioEvent, int pitch)
     {
         timeSinceCreation += Time.deltaTime;
-        UpdateShapes(_currentAudioEvent);
+        UpdateShapes(_currentAudioEvent,pitch);
         RunComputeShaders();
  
         Draw();
@@ -190,9 +190,9 @@ struct ShapeProps
         for (int i = 0; i < m_shapes.Count; i++)
         {
             m_shapes[i].lastUpdated += Time.deltaTime;
-            if(m_shapes[i].lastUpdated > 10.0f)
+            if(m_shapes[i].lastUpdated > 5.0f && m_shapes[i].gravityFactor - 0.001f > 0.0f)
             {
-                m_shapes[i].size -= 0.001f;
+                m_shapes[i].gravityFactor -= 0.001f;
             }
             if (m_shapes[i].size < 0.0f)
                 DeleteShape(i);
@@ -203,24 +203,30 @@ struct ShapeProps
     }
 
 
-    void UpdateShapes(AudioEvent _currentAudioEvent)
+    void UpdateShapes(AudioEvent _currentAudioEvent, int pitch)
     {
 
-        float threshold = 0.001f;
+        if(pitch <= 0)
+        {
+            return;
+        }
+
+        Debug.Log(pitch);
+
         for (int i = 0; i < m_shapes.Count; i++)
         {
-             if (m_shapes[i].value - threshold < _currentAudioEvent.pitch && m_shapes[i].value + threshold > _currentAudioEvent.pitch)
+             if (m_shapes[i].value == (float)pitch)
             {
                 UpdateShape(i);
                 return;
             }
         }
 
-        CreateNewShape(_currentAudioEvent);
+        CreateNewShape(_currentAudioEvent, pitch);
 
     }
 
-    void CreateNewShape(AudioEvent _audioEvent)
+    void CreateNewShape(AudioEvent _audioEvent, int pitch)
     {
         if(m_shapes.Count < maxShapeCount) {
 
@@ -229,7 +235,7 @@ struct ShapeProps
             float friction = m_mapper.ValidateFriction(_audioEvent);
             float mass = m_mapper.ValidateMass(_audioEvent);
             int number = m_mapper.ValidateNumberofParticles(_audioEvent);
-            float value = m_mapper.ValidateValue(_audioEvent);
+            float value = pitch;//m_mapper.ValidateValue(_audioEvent);
 
             Color color = m_mapper.ValidateColor(_audioEvent);
 
@@ -237,7 +243,7 @@ struct ShapeProps
 
             if (value > 0 && _audioEvent.peakEnergy > 0.3f && timeSinceCreation > creationCooldown) {
                 timeSinceCreation = 0.0f;
-                int r = Random.Range(0, 3);
+                int r = Random.Range(0, 4);
                 ShapeGeometry geometry = GetShapeByIndex(r);
 
                 InitNewShape(value, new Vector3(0,0,0),size, mass,geometry,color ,speed, friction,number);
@@ -257,7 +263,7 @@ struct ShapeProps
         Debug.Log("Delete shape " + index);
        // m_shapes[index].repitions = 0;
 
-        m_shapes.RemoveAt(index);
+       /* m_shapes.RemoveAt(index);
         m_materials.RemoveAt(index);
 
         m_shaders.RemoveAt(index);
@@ -272,7 +278,7 @@ struct ShapeProps
         m_argsBuffers.RemoveAt(index);
 
         //TODO also delete from allshapeprops array 
-        Debug.Log("finished deletion");
+        Debug.Log("finished deletion");*/
 
     }
     void UpdateShape(int index)
@@ -281,7 +287,9 @@ struct ShapeProps
           //  m_shapes[index].size += 0.00001f;
 
         m_shapes[index].lastUpdated = 0.0f ;
-        m_shapes[index].repitions++; 
+        m_shapes[index].repitions++;
+        m_shapes[index].gravityFactor += 0.01f;
+
         Shape max = GetMostRepititiveShape();
 
 
@@ -299,8 +307,7 @@ struct ShapeProps
 
 
             float[] bounds = m_mapper.GetParamLimit(m_mapper.numberMapper);
-            float value = m_mapper.Map(s.value, bounds[0], bounds[1], 1.5f, 2.5f);
-            Debug.Log(value);
+            float value = m_mapper.Map(s.value, 20, 127, 1.5f, 2.5f);
 
             float alpha = value * Mathf.PI;
             float r =  (1.0f - x) * 8.0f;

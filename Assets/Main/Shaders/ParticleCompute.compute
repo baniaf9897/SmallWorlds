@@ -179,7 +179,7 @@ float3 applyForces(float3 pos, float mass1, float mass2, float dist, float frict
     float3 acceleration = float3(0, 0, 0);
     
     //gravity
-    acceleration += GetGravityForce(pos, mass1, mass2, dist) * gravityFactor;
+    acceleration += sdGetGravityForce(pos, mass1, mass2, dist)* gravityFactor;
 
 
     //random steering => perlin noise

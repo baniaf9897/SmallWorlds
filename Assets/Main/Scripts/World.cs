@@ -87,7 +87,7 @@ public class World : MonoBehaviour
     {
 
         m_audioManager.Update();
-        m_shapeManager.Update(ixAudioOSCReceiver.currentAudioEvent);
+        m_shapeManager.Update(ixAudioOSCReceiver.currentAudioEvent, ixAudioOSCReceiver.currentPolyphonicPitch);
         //m_shapeManager.Update(m_audioManager.GetCurrentAudioEvent());
       
     }
