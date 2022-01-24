@@ -49,12 +49,15 @@ float4 _Time;
 
 
 /****************   SDFs  *****************/
-
+float SquaredLength(float3 v)
+{
+    return dot(v, v);
+}
 
 float CalcDistanceSphere(float3 center, float3 pos) {
   
     pos = pos - center;
-    return length(pos) - size;
+    return SquaredLength(pos) - size;
 }
 
 float CalcDistanceCube(float3 center, float3 pos) {
@@ -115,6 +118,9 @@ float3 limit(float3 v, float _limit) {
     v.y = clamp(v.y, -_limit, _limit);
     v.z = clamp(v.z, -_limit, _limit);
 
+    //v = v / length(v);
+    //v = v * _limit;
+
     return v;
 }
 
@@ -140,7 +146,7 @@ float4 CalcColor(float3 pos, float4 color) {
 
 float3 GetGravityForce(float3 pos, float mass1, float mass2, float dist) {
 
-    float3 force = float3(0, 0, 0);
+    /*float3 force = float3(0, 0, 0);
     float n = 0;
 
     for (int i = 0; i < maxShapeCount; i++) {
@@ -157,7 +163,7 @@ float3 GetGravityForce(float3 pos, float mass1, float mass2, float dist) {
 
     if(n > 0){
         force = (force/n) * attractionFactor;
-    }
+    }*/
     //if (dist < 0)
     //    return float3(0,0,0);
  
@@ -179,11 +185,11 @@ float3 applyForces(float3 pos, float mass1, float mass2, float dist, float frict
     float3 acceleration = float3(0, 0, 0);
     
     //gravity
-    acceleration += sdGetGravityForce(pos, mass1, mass2, dist)* gravityFactor;
+    acceleration += GetGravityForce(pos, mass1, mass2, dist) * gravityFactor;
 
-
+    
     //random steering => perlin noise
-    acceleration += GetSteeringForce(pos, mass1, frictionCoefficient) ;
+    acceleration += GetSteeringForce(pos, mass1, frictionCoefficient);
 
    // acceleration = limit(acceleration, 0.3);
 
@@ -232,22 +238,68 @@ void CSSphere(uint3 id : SV_DispatchThreadID)
     float mass = _Boids[id.x].mass;
     float friction = _Boids[id.x].friction;
 
-    float dist = CalcDistanceSphere(center, pos);
+    float eps = 0.01;
+
+    float3 offset = cross(vel, float3(0.0, 0.0, 1.0));
+
+    if (SquaredLength(offset) == 0)
+        offset = float3(0, 0.1, 0);
+    //offset = offset * eps;
+
+    float3 nextPos = pos + vel;
+
+  //  float dist1 = CalcDistanceSphere(center, nextPos);
+   // float dist2 = CalcDistanceSphere(center, nextPos + offset);
+   // float dist3 = CalcDistanceSphere(center, nextPos - offset);
+
+//    float maxDist = max(max(dist1, dist2), dist3);
+    float3 acceleration = float3(0, 0, 0);
+
+  //  acceleration += (maxDist - dist1) * vel + (maxDist - dist2) * (vel + offset) + (maxDist - dist3) * (vel - offset);
+    acceleration += ((center - pos + vel) * CalcDistanceSphere(center, pos));
+    acceleration *= gravityFactor;
+
+
+
+
+   /*float3 acceleration = dir1 / dist1;
+   acceleration += dir2 /  dist2;
+   acceleration += dir3 / dist3;
+
+    acceleration = acceleration / length(acceleration);
+
+   */
+
+   // acceleration = dir1 / dist1 * gravityFactor;
+   // acceleration += dir2 / dist2 * gravityFactor;
+   // acceleration += dir3 / dist3 * gravityFactor;
+
+ //   acceleration *= 0.33;
+
+
+    //acceleration += GetSteeringForce(pos, mass, friction);
+
+
  
-    vel += applyForces(pos, mass, centerMass, dist, friction);
+    vel += acceleration; //applyForces(pos, mass, centerMass, dist1, friction);
     vel = limit(vel, 0.3);
+
+    //vel = float3(0.3, 0.3, 0.3);
+
+    //vel = limit(vel, 0.3);
+
 
     pos += vel * speed;
     mass = CalcMass(pos, mass);
 
-    vel -= vel * globalFriction;
+    //vel -= vel * globalFriction;
 
 
     _Boids[id.x].pos = pos;
     _Boids[id.x].velocity = vel;
     _Boids[id.x].mass = mass;
 
-    _Properties[id.x].color = CalcColor(pos, _Boids[id.x].color);
+    _Properties[id.x].color =  CalcColor(pos, _Boids[id.x].color);
     _Properties[id.x].mat = GetTransformationMatrix(pos, scale);
 
 }

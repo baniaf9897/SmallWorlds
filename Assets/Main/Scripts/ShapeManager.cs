@@ -211,8 +211,6 @@ struct ShapeProps
             return;
         }
 
-        Debug.Log(pitch);
-
         for (int i = 0; i < m_shapes.Count; i++)
         {
              if (m_shapes[i].value == (float)pitch)
@@ -244,7 +242,7 @@ struct ShapeProps
             if (value > 0 && _audioEvent.peakEnergy > 0.3f && timeSinceCreation > creationCooldown) {
                 timeSinceCreation = 0.0f;
                 int r = Random.Range(0, 4);
-                ShapeGeometry geometry = GetShapeByIndex(r);
+                ShapeGeometry geometry = ShapeGeometry.SPHERE;//GetShapeByIndex(r);
 
                 InitNewShape(value, new Vector3(0,0,0),size, mass,geometry,color ,speed, friction,number);
                 Debug.Log("[ShapeManager] Create new Shape");
@@ -277,14 +275,11 @@ struct ShapeProps
         m_argsBuffers[index].Release();
         m_argsBuffers.RemoveAt(index);
 
-        //TODO also delete from allshapeprops array 
         Debug.Log("finished deletion");*/
 
     }
     void UpdateShape(int index)
     {
-       // if(m_shapes[index].size < m_mapper.limits.maxSize)
-          //  m_shapes[index].size += 0.00001f;
 
         m_shapes[index].lastUpdated = 0.0f ;
         m_shapes[index].repitions++;
