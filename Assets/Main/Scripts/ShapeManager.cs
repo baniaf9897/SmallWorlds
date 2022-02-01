@@ -192,10 +192,8 @@ struct ShapeProps
             m_shapes[i].lastUpdated += Time.deltaTime;
             if(m_shapes[i].lastUpdated > 5.0f && m_shapes[i].gravityFactor - 0.001f > 0.0f)
             {
-                m_shapes[i].gravityFactor -= 0.001f;
+                m_shapes[i].gravityFactor -= 0.0001f;
             }
-            if (m_shapes[i].size < 0.0f)
-                DeleteShape(i);
 
             if (m_shapes[i].repitions > 0)
                 Graphics.DrawMeshInstancedIndirect(m_mesh, 0, m_materials[i], m_shapes[i].bounds, m_argsBuffers[i]);
@@ -242,7 +240,7 @@ struct ShapeProps
             if (value > 0 && _audioEvent.peakEnergy > 0.3f && timeSinceCreation > creationCooldown) {
                 timeSinceCreation = 0.0f;
                 int r = Random.Range(0, 4);
-                ShapeGeometry geometry = ShapeGeometry.CUBE;//GetShapeByIndex(r);
+                ShapeGeometry geometry = GetShapeByIndex(r);
 
                 InitNewShape(value, new Vector3(0,0,0),size, mass,geometry,color ,speed, friction,number);
                 Debug.Log("[ShapeManager] Create new Shape");
@@ -256,28 +254,6 @@ struct ShapeProps
         }
     }
 
-    void DeleteShape(int index)
-    {
-        Debug.Log("Delete shape " + index);
-       // m_shapes[index].repitions = 0;
-
-       /* m_shapes.RemoveAt(index);
-        m_materials.RemoveAt(index);
-
-        m_shaders.RemoveAt(index);
-
-        m_particleBuffers[index].Release();
-        m_particleBuffers.RemoveAt(index);
-
-        m_particlePropsBuffers[index].Release();
-        m_particlePropsBuffers.RemoveAt(index);
-
-        m_argsBuffers[index].Release();
-        m_argsBuffers.RemoveAt(index);
-
-        Debug.Log("finished deletion");*/
-
-    }
     void UpdateShape(int index)
     {
 
@@ -364,13 +340,6 @@ struct ShapeProps
                 m_shaders[i].SetVector("center", s.center);
 
                 s.bounds = new Bounds(s.center, Vector3.one * 10.0f);
-
-                Quaternion q = Quaternion.identity;
-                q.SetLookRotation(s.center - Camera.main.transform.position);
-
-                Matrix4x4 rot = Matrix4x4.TRS(Vector3.zero, q, Vector3.one);
-                m_shaders[i].SetMatrix("rotMat", rot);
-
 
                 m_shaders[i].SetFloat("speed", s.speed);
                 m_shaders[i].SetFloat("gravityFactor", s.gravityFactor);
