@@ -1481,7 +1481,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   computeShaderTmp: {fileID: 7200000, guid: f4a318dd9696c0340a01f2afbee0cb11, type: 3}
   materialTmp: {fileID: 2100000, guid: b9d5bfdcdb68f1f469630a330cfbac6c, type: 2}
-  quadSize: 0.08
+  quadSize: 0.1
   m_shapeManager: {fileID: 0}
   globalGravity: 0.42
   globalAttraction: 0

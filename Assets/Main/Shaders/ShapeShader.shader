@@ -45,8 +45,51 @@ Shader "Custom/ShapeShader"
         v2f vert(appdata_t i, uint instanceID: SV_InstanceID)
         {
             v2f o;
+            //float3 worldPos = mul(_Properties[instanceID].mat, i.vertex);
+            //o.sphPos = mul( _Properties[instanceID].mat, float3(0.05, 0.05, 0.05));
 
-            float3 worldPos = mul(_Properties[instanceID].mat, i.vertex);
+            o.rayOrigin = _WorldSpaceCameraPos.xyz;
+
+
+            // get object's world space pivot from the transform matrix
+            float3 worldSpacePivot = _Properties[instanceID].mat._m03_m13_m23 ;
+            float3 worldSpacePivotToCamera = _WorldSpaceCameraPos.xyz - worldSpacePivot;
+
+            float3 up = UNITY_MATRIX_I_V._m01_m11_m21;
+            float3 forward = normalize(worldSpacePivotToCamera);
+            float3 right = normalize(cross(forward, up));
+            up = cross(right, forward);
+            float3x3 rotMat = float3x3(right, up, forward);
+
+            float3 worldPos = mul(float3(i.vertex.xy, 0.3), rotMat) + worldSpacePivot;
+            float3 worldRayDir = worldPos - _WorldSpaceCameraPos.xyz;
+            o.rayDir = mul(unity_WorldToObject, float4(worldRayDir, 0.0));
+
+
+            o.sphPos = _Properties[instanceID].mat._m03_m13_m23 + mul(float3(0.05, 0.05, 0.05),rotMat);
+
+            // transform into view space
+          //  float3 viewSpacePivot = mul(UNITY_MATRIX_V, float4(worldSpacePivot, 1.0));
+            // object space vertex position + view pivot = billboarded quad
+          //  float3 viewSpacePos = i.vertex + viewSpacePivot;
+            // calculate the object space ray dir from the view space position
+          //  o.rayDir = mul(unity_WorldToObject,
+           //     mul(UNITY_MATRIX_I_V, float4(viewSpacePos, 0.0))
+           // );
+            // apply projection matrix to get clip space position
+            o.pos = UnityWorldToClipPos(worldPos);
+            o.color = _Properties[instanceID].color;
+
+            return o;
+
+
+      
+           
+
+
+
+
+           /* float3 worldPos = mul(_Properties[instanceID].mat, i.vertex);
             o.sphPos = _Properties[instanceID].mat._m03_m13_m23 + float3(0.05,0.05,0.05);
             // calculate and world space ray direction and origin for interpolation
             o.rayDir = worldPos - _WorldSpaceCameraPos.xyz;
@@ -54,7 +97,15 @@ Shader "Custom/ShapeShader"
             o.color = _Properties[instanceID].color;
 
             o.pos = UnityWorldToClipPos(worldPos);
-            return o;
+            return o;*/
+
+
+
+
+
+
+
+
            /* float4 vertex_pos = mul(_Properties[instanceID].mat, i.vertex);//mul(UNITY_MATRIX_M, mul(_Properties[instanceID].mat, i.vertex));
            
             o.rayOrigin = _WorldSpaceCameraPos.xyz;
@@ -165,6 +216,9 @@ Shader "Custom/ShapeShader"
 
                 // above function returns -1 if there's no intersection
                 clip(rayHit);
+               // if (rayHit == -1) {
+                //    return half4(0.2, 0.2, 0.2, 1);
+               // }
          
                 // calculate world space position from ray, front hit ray length, and ray origin
                 float3 worldPos = rayDir * rayHit + rayOrigin;
