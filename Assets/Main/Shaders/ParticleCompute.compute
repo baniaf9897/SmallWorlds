@@ -125,6 +125,13 @@ float3 limit(float3 v, float _limit) {
 }
 
 float4x4 GetTransformationMatrix(float3 pos, float3 scale) {
+    return float4x4(
+        scale.x, 0, 0, pos.x,
+        0, scale.y, 0, pos.y,
+        0, 0, scale.z, pos.z,
+        0, 0, 0, 1
+        );
+    
     return mul(float4x4(
         scale.x, 0, 0, pos.x,
         0, scale.y, 0, pos.y,
@@ -187,7 +194,6 @@ float3 applyForces(float3 pos, float mass1, float mass2, float dist, float frict
     //gravity
     acceleration += GetGravityForce(pos, mass1, mass2, dist) * gravityFactor;
 
-    
     //random steering => perlin noise
     acceleration += GetSteeringForce(pos, mass1, frictionCoefficient);
 

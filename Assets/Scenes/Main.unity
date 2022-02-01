@@ -1481,7 +1481,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   computeShaderTmp: {fileID: 7200000, guid: f4a318dd9696c0340a01f2afbee0cb11, type: 3}
   materialTmp: {fileID: 2100000, guid: b9d5bfdcdb68f1f469630a330cfbac6c, type: 2}
-  quadSize: 0.03
+  quadSize: 0.08
   m_shapeManager: {fileID: 0}
   globalGravity: 0.42
   globalAttraction: 0
@@ -1605,7 +1605,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6291d1cd9c2bea94482c4d7a30f5ae2e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Port: 10000
+  m_Port: 9998
 --- !u!114 &2095717746
 MonoBehaviour:
   m_ObjectHideFlags: 0
