@@ -234,15 +234,18 @@ struct ShapeProps
             float value = pitch;//m_mapper.ValidateValue(_audioEvent);
 
             Color color = m_mapper.ValidateColor(_audioEvent);
+            Color hsv = new Color();
+
+            Color.RGBToHSV(color, out hsv.r,out hsv.g, out hsv.b);
 
      
 
             if (value > 0 && _audioEvent.peakEnergy > 0.3f && timeSinceCreation > creationCooldown) {
                 timeSinceCreation = 0.0f;
                 int r = Random.Range(0, 4);
-                ShapeGeometry geometry = GetShapeByIndex(r);
+                ShapeGeometry geometry = ShapeGeometry.SPHERE;// GetShapeByIndex(r);
 
-                InitNewShape(value, new Vector3(0,0,0),size, mass,geometry,color ,speed, friction,number);
+                InitNewShape(value, new Vector3(0,0,0),size, mass,geometry, hsv, speed, friction,number);
                 Debug.Log("[ShapeManager] Create new Shape");
                 Debug.Log("Size " + size);
                 Debug.Log("speed " + speed);
@@ -348,6 +351,8 @@ struct ShapeProps
                 m_shaders[i].SetFloat("size", s.size);
                 m_shaders[i].SetBuffer(kernel, "_ShapeProps", m_shapePropBuffer);
                 m_shaders[i].SetInt("maxShapeCount", maxShapeCount);
+                
+                m_shaders[i].SetFloat("timeSinceUpdate", s.lastUpdated);
 
                 m_shaders[i].SetVector("_Time", Shader.GetGlobalVector("_Time"));
 

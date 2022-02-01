@@ -45,6 +45,8 @@ float globalFriction = 0;
 
 float4 _Time;
 
+float timeSinceUpdate;
+
 
 /****************   SDFs  *****************/
 float SquaredLength(float3 v)
@@ -138,6 +140,13 @@ float CalcMass(float3 pos, float mass) {
 float4 CalcColor(float3 pos, float4 color) {
      color.r *= (noise3D(pos) + 1) / 2;
      return color;
+}
+
+float3 hsv2rgb(float3 c)
+{
+    float4 K = float4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+    float3 p = abs(frac(c.xxx + K.xyz) * 6.0 - K.www);
+    return c.z * lerp(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
 }
 
 /****************   Forces  *****************/
@@ -290,7 +299,14 @@ void CSSphere(uint3 id : SV_DispatchThreadID)
     _Boids[id.x].velocity = vel;
     _Boids[id.x].mass = mass;
 
-    _Properties[id.x].color =  CalcColor(pos, _Boids[id.x].color);
+    float4 newColor = _Boids[id.x].color;// CalcColor(pos, _Boids[id.x].color);
+
+    if (timeSinceUpdate > 0)
+    {
+        newColor.y = (newColor.y * 10)  / timeSinceUpdate;
+    }
+
+    _Properties[id.x].color = float4(hsv2rgb(newColor.rgb), 1);// float4(hsv2rgb(_Boids[id.x].color.rgb),1);// // 
     _Properties[id.x].mat = GetTransformationMatrix(pos, scale);
 
 }
