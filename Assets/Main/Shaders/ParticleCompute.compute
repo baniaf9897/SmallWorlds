@@ -137,8 +137,10 @@ float CalcMass(float3 pos, float mass) {
     return mass + noise3D(pos);
 }
 
-float4 CalcColor(float3 pos, float4 color) {
-     color.r *= (noise3D(pos) + 1) / 2;
+float3 CalcColor(float3 pos, float3 color, float timeSinceUpdate) {
+     color.x += noise3D(pos) * 0.1;
+     color.y = clamp(color.y - timeSinceUpdate * 0.1, 0.3, 1);
+
      return color;
 }
 
@@ -228,7 +230,7 @@ void CSCube(uint3 id : SV_DispatchThreadID)
     _Boids[id.x].velocity = vel;
     _Boids[id.x].mass = mass;
 
-    _Properties[id.x].color = CalcColor(pos,_Boids[id.x].color);
+    //_Properties[id.x].color = CalcColor(pos,_Boids[id.x].color.rgb,timeSinceUpdate);
     _Properties[id.x].mat = GetTransformationMatrix(pos, scale);
 }
 
@@ -299,23 +301,16 @@ void CSSphere(uint3 id : SV_DispatchThreadID)
 
     _Boids[id.x].pos = pos;
     _Boids[id.x].velocity = vel;
-    _Boids[id.x].mass = mass;
-
-    float4 newColor = _Boids[id.x].color;// CalcColor(pos, _Boids[id.x].color);
-
-   
-    newColor.y = clamp( newColor.y - timeSinceUpdate * 0.1, 0.4,1);
+    _Boids[id.x].mass = mass;    
     
-    
-    float alpha = 1.0;
 
     dist += size + 0.0001;
 
-    alpha = size / dist + 0.5;
-    alpha = clamp(alpha, 0.1,1.5);
+    float alpha = size / dist + 0.5;
+    alpha = clamp(alpha, 0.3,1.5);
     
 
-    _Properties[id.x].color = float4(hsv2rgb(newColor.rgb), alpha);// float4(hsv2rgb(_Boids[id.x].color.rgb),1);// // 
+    _Properties[id.x].color = float4(hsv2rgb(CalcColor(pos, _Boids[id.x].color.rgb, timeSinceUpdate)), alpha);// float4(hsv2rgb(_Boids[id.x].color.rgb),1);// // 
     _Properties[id.x].mat = GetTransformationMatrix(pos, scale);
 
 }
@@ -346,7 +341,7 @@ void CSCapsule(uint3 id : SV_DispatchThreadID)
     _Boids[id.x].velocity = vel;
     _Boids[id.x].mass = mass;
 
-    _Properties[id.x].color = CalcColor(pos, _Boids[id.x].color);
+    //_Properties[id.x].color = CalcColor(pos, _Boids[id.x].color);
     _Properties[id.x].mat = GetTransformationMatrix(pos, scale);
 }
 
@@ -375,7 +370,7 @@ void CSPyramid(uint3 id : SV_DispatchThreadID)
     _Boids[id.x].velocity = vel;
     _Boids[id.x].mass = mass;
 
-    _Properties[id.x].color = CalcColor(pos, _Boids[id.x].color);
+    //_Properties[id.x].color = CalcColor(pos, _Boids[id.x].color);
     _Properties[id.x].mat = GetTransformationMatrix(pos, scale);
 }
 
