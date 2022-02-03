@@ -232,7 +232,7 @@ void CSCube(uint3 id : SV_DispatchThreadID)
     _Properties[id.x].mat = GetTransformationMatrix(pos, scale);
 }
 
-[numthreads(128, 1, 1)]
+[numthreads(256, 1, 1)]
 void CSSphere(uint3 id : SV_DispatchThreadID)
 {
 
@@ -252,8 +252,10 @@ void CSSphere(uint3 id : SV_DispatchThreadID)
 
     float3 nextPos = pos + vel;
 
+    float dist = CalcDistanceSphere(center, nextPos);
+
  
-    float3 acceleration = applyForces(pos, mass, centerMass, CalcDistanceSphere(center, nextPos), friction);;
+    float3 acceleration = applyForces(nextPos, mass, centerMass, dist, friction);
 
   //  acceleration += (maxDist - dist1) * vel + (maxDist - dist2) * (vel + offset) + (maxDist - dist3) * (vel - offset);
    // acceleration += ((center - pos + vel) * CalcDistanceSphere(center, nextPos));
@@ -301,12 +303,19 @@ void CSSphere(uint3 id : SV_DispatchThreadID)
 
     float4 newColor = _Boids[id.x].color;// CalcColor(pos, _Boids[id.x].color);
 
-    if (timeSinceUpdate > 0)
-    {
-        newColor.y = (newColor.y * 10)  / timeSinceUpdate;
-    }
+   
+    newColor.y = clamp( newColor.y - timeSinceUpdate * 0.1, 0.4,1);
+    
+    
+    float alpha = 1.0;
 
-    _Properties[id.x].color = float4(hsv2rgb(newColor.rgb), 1);// float4(hsv2rgb(_Boids[id.x].color.rgb),1);// // 
+    dist += size + 0.0001;
+
+    alpha = size / dist + 0.5;
+    alpha = clamp(alpha, 0.1,1.5);
+    
+
+    _Properties[id.x].color = float4(hsv2rgb(newColor.rgb), alpha);// float4(hsv2rgb(_Boids[id.x].color.rgb),1);// // 
     _Properties[id.x].mat = GetTransformationMatrix(pos, scale);
 
 }

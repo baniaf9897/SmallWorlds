@@ -6,7 +6,7 @@ Shader "Custom/ShapeShader"
     }
         SubShader
     {
-        Tags { "RenderType" = "Opaque" }
+        //Tags { "RenderType" = "Opaque" }
         LOD 100
 
         Pass
@@ -14,6 +14,7 @@ Shader "Custom/ShapeShader"
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
+
         // make fog work
 
         #include "UnityCG.cginc"
@@ -87,7 +88,7 @@ Shader "Custom/ShapeShader"
 
             float3 spherePos = i.sphPos;
 
-            float rayHit = sphIntersect(rayOrigin, rayDir, float4(spherePos, 0.03));
+            float rayHit = sphIntersect(rayOrigin, rayDir, float4(spherePos, 0.02 * i.color.w));
 
             clip(rayHit);
           
@@ -103,7 +104,7 @@ Shader "Custom/ShapeShader"
             float4 clipPos = UnityWorldToClipPos(worldPos);
             outDepth = clipPos.z / clipPos.w;
 
-            return half4(lighting, 1.0);
+            return half4(lighting, i.color.w);
          }
          ENDCG
      }
