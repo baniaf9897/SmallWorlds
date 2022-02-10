@@ -137,6 +137,15 @@ float CalcMass(float3 pos, float mass) {
     return mass + noise3D(pos);
 }
 
+float CalcAlpha(float dist, float size) {
+    dist += size + 0.0001;
+
+    float alpha = size / dist + 0.5;
+    alpha = clamp(alpha, 0.3, 1.5);
+
+    return alpha;
+}
+
 float3 CalcColor(float3 pos, float3 color, float timeSinceUpdate) {
      color.x += noise3D(pos) * 0.1;
      color.y = clamp(color.y - timeSinceUpdate * 0.1, 0.3, 1);
@@ -154,31 +163,7 @@ float3 hsv2rgb(float3 c)
 /****************   Forces  *****************/
 
 float3 GetGravityForce(float3 pos, float mass1, float mass2, float dist) {
-
-    /*float3 force = float3(0, 0, 0);
-    float n = 0;
-
-    for (int i = 0; i < maxShapeCount; i++) {
-        if (_ShapeProps[i].active == 1) {
-               float _dist =  length(_ShapeProps[i].center - pos);  
-               float3 dir = (_ShapeProps[i].center - pos) / _dist;
-
-               force += (_ShapeProps[i].center - pos) * _dist; //( (mass1 * _ShapeProps[i].mass) / (_dist * _dist)) * dir;
-                
-               n++;
-
-        }
-    } 
-
-    if(n > 0){
-        force = (force/n) * attractionFactor;
-    }*/
-    //if (dist < 0)
-    //    return float3(0,0,0);
- 
-   // float3 dir = (center - pos)/length(center-pos); 
-    return ((center - pos) * dist);//  force + ((mass1 * mass2) /dist) *  dir;// (center - pos) * dist * 0.05; 
-    
+    return ((center - pos) * dist);    
 }       
 
 float3 GetSteeringForce(float3 pos , float mass, float steeringFactor) {
@@ -216,9 +201,10 @@ void CSCube(uint3 id : SV_DispatchThreadID)
     float mass = _Boids[id.x].mass;
     float friction = _Boids[id.x].friction;
 
-    float dist = CalcDistanceCube(center, pos);
+    float3 nextPos = pos + vel;
+    float dist = CalcDistanceCube(center, nextPos);
 
-    vel += applyForces(pos, mass, centerMass, dist, friction);
+    vel += applyForces(nextPos, mass, centerMass, dist, friction);
     vel = limit(vel, 0.3);
 
     pos += vel * speed;
@@ -230,7 +216,9 @@ void CSCube(uint3 id : SV_DispatchThreadID)
     _Boids[id.x].velocity = vel;
     _Boids[id.x].mass = mass;
 
-    //_Properties[id.x].color = CalcColor(pos,_Boids[id.x].color.rgb,timeSinceUpdate);
+    float alpha = CalcAlpha(dist, size);
+
+    _Properties[id.x].color = float4(hsv2rgb(CalcColor(pos, _Boids[id.x].color.rgb, timeSinceUpdate)), alpha);
     _Properties[id.x].mat = GetTransformationMatrix(pos, scale);
 }
 
@@ -246,71 +234,23 @@ void CSSphere(uint3 id : SV_DispatchThreadID)
 
     float eps = 0.01;
 
-    float3 offset = cross(vel, float3(0.0, 0.0, 1.0));
-
-    if (SquaredLength(offset) == 0)
-        offset = float3(0, 0.1, 0);
-    //offset = offset * eps;
-
     float3 nextPos = pos + vel;
-
     float dist = CalcDistanceSphere(center, nextPos);
-
- 
     float3 acceleration = applyForces(nextPos, mass, centerMass, dist, friction);
-
-  //  acceleration += (maxDist - dist1) * vel + (maxDist - dist2) * (vel + offset) + (maxDist - dist3) * (vel - offset);
-   // acceleration += ((center - pos + vel) * CalcDistanceSphere(center, nextPos));
-   // acceleration *= gravityFactor;
-
-
-
-
-   /*float3 acceleration = dir1 / dist1;
-   acceleration += dir2 /  dist2;
-   acceleration += dir3 / dist3;
-
-    acceleration = acceleration / length(acceleration);
-
-   */
-
-   // acceleration = dir1 / dist1 * gravityFactor;
-   // acceleration += dir2 / dist2 * gravityFactor;
-   // acceleration += dir3 / dist3 * gravityFactor;
-
- //   acceleration *= 0.33;
-
-
-    //acceleration += GetSteeringForce(pos, mass, friction);
-
-
  
-    vel += acceleration; //applyForces(pos, mass, centerMass, dist1, friction);
+    vel += acceleration; 
     vel = limit(vel, 0.3);
-
-    //vel = float3(0.3, 0.3, 0.3);
-
-    //vel = limit(vel, 0.3);
-
 
     pos += vel * speed;
     mass = CalcMass(pos, mass);
-
-    //vel -= vel * globalFriction;
-
 
     _Boids[id.x].pos = pos;
     _Boids[id.x].velocity = vel;
     _Boids[id.x].mass = mass;    
     
+    float alpha = CalcAlpha(dist, size);
 
-    dist += size + 0.0001;
-
-    float alpha = size / dist + 0.5;
-    alpha = clamp(alpha, 0.3,1.5);
-    
-
-    _Properties[id.x].color = float4(hsv2rgb(CalcColor(pos, _Boids[id.x].color.rgb, timeSinceUpdate)), alpha);// float4(hsv2rgb(_Boids[id.x].color.rgb),1);// // 
+    _Properties[id.x].color = float4(hsv2rgb(CalcColor(pos, _Boids[id.x].color.rgb, timeSinceUpdate)), alpha);
     _Properties[id.x].mat = GetTransformationMatrix(pos, scale);
 
 }
@@ -325,10 +265,10 @@ void CSCapsule(uint3 id : SV_DispatchThreadID)
     float mass = _Boids[id.x].mass;
     float friction = _Boids[id.x].friction;
 
+    float3 nextPos = pos + vel;
+    float dist = CalcDistanceCapsule(center, nextPos);
 
-    float dist = CalcDistanceCapsule(center, pos);
-
-    vel += applyForces(pos, mass, centerMass, dist, friction);
+    vel += applyForces(nextPos, mass, centerMass, dist, friction);
     vel = limit(vel, 0.3);
 
     pos += vel * speed;
@@ -341,7 +281,9 @@ void CSCapsule(uint3 id : SV_DispatchThreadID)
     _Boids[id.x].velocity = vel;
     _Boids[id.x].mass = mass;
 
-    //_Properties[id.x].color = CalcColor(pos, _Boids[id.x].color);
+    float alpha = CalcAlpha(dist, size);
+
+    _Properties[id.x].color = float4(hsv2rgb(CalcColor(pos, _Boids[id.x].color.rgb, timeSinceUpdate)), alpha);
     _Properties[id.x].mat = GetTransformationMatrix(pos, scale);
 }
 
@@ -356,9 +298,10 @@ void CSPyramid(uint3 id : SV_DispatchThreadID)
     float mass = _Boids[id.x].mass;
     float friction = _Boids[id.x].friction;
 
-    float dist = CalcDistancePyramid(center, pos);
+    float3 nextPos = pos + vel;
+    float dist = CalcDistancePyramid(center, nextPos);
 
-    vel += applyForces(pos, mass, centerMass, dist, friction);
+    vel += applyForces(nextPos, mass, centerMass, dist, friction);
     vel = limit(vel, 0.3);
 
     pos += vel * speed;
@@ -370,7 +313,9 @@ void CSPyramid(uint3 id : SV_DispatchThreadID)
     _Boids[id.x].velocity = vel;
     _Boids[id.x].mass = mass;
 
-    //_Properties[id.x].color = CalcColor(pos, _Boids[id.x].color);
+    float alpha = CalcAlpha(dist, size);
+
+    _Properties[id.x].color = float4(hsv2rgb(CalcColor(pos, _Boids[id.x].color.rgb, timeSinceUpdate)), alpha);
     _Properties[id.x].mat = GetTransformationMatrix(pos, scale);
 }
 
