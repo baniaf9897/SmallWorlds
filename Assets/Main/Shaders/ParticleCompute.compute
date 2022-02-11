@@ -10,6 +10,7 @@
 struct BoidProps {
     float4x4 mat;
     float4 color;
+    float scale;
 };
 
 struct Boid {
@@ -22,13 +23,6 @@ struct Boid {
     float friction;
 };
 
-struct ShapeProps {
-    float mass;
-    float3 center;
-    int active;
-};
-
-RWStructuredBuffer<ShapeProps> _ShapeProps;
 RWStructuredBuffer<BoidProps> _Properties;
 RWStructuredBuffer<Boid> _Boids;
 
@@ -47,6 +41,8 @@ float4 _Time;
 
 float timeSinceUpdate;
 
+float deltaTime;
+float alpha;
 
 /****************   SDFs  *****************/
 float SquaredLength(float3 v)
@@ -137,13 +133,13 @@ float CalcMass(float3 pos, float mass) {
     return mass + noise3D(pos);
 }
 
-float CalcAlpha(float dist, float size) {
+float CalcScale(float dist, float size) {
     dist += size + 0.0001;
 
-    float alpha = size / dist + 0.5;
-    alpha = clamp(alpha, 0.3, 1.5);
+    float scale = size / dist + 0.5;
+    scale = clamp(scale, 0.3, 1.5);
 
-    return alpha;
+    return scale;
 }
 
 float3 CalcColor(float3 pos, float3 color, float timeSinceUpdate) {
@@ -216,7 +212,7 @@ void CSCube(uint3 id : SV_DispatchThreadID)
     _Boids[id.x].velocity = vel;
     _Boids[id.x].mass = mass;
 
-    float alpha = CalcAlpha(dist, size);
+    float s = CalcScale(dist, size);
 
     _Properties[id.x].color = float4(hsv2rgb(CalcColor(pos, _Boids[id.x].color.rgb, timeSinceUpdate)), alpha);
     _Properties[id.x].mat = GetTransformationMatrix(pos, scale);
@@ -248,11 +244,11 @@ void CSSphere(uint3 id : SV_DispatchThreadID)
     _Boids[id.x].velocity = vel;
     _Boids[id.x].mass = mass;    
     
-    float alpha = CalcAlpha(dist, size);
+    float s = CalcScale(dist, size);
 
     _Properties[id.x].color = float4(hsv2rgb(CalcColor(pos, _Boids[id.x].color.rgb, timeSinceUpdate)), alpha);
     _Properties[id.x].mat = GetTransformationMatrix(pos, scale);
-
+    _Properties[id.x].scale = s;
 }
 [numthreads(128, 1, 1)]
 void CSCapsule(uint3 id : SV_DispatchThreadID)
@@ -281,7 +277,7 @@ void CSCapsule(uint3 id : SV_DispatchThreadID)
     _Boids[id.x].velocity = vel;
     _Boids[id.x].mass = mass;
 
-    float alpha = CalcAlpha(dist, size);
+    float s = CalcScale(dist, size);
 
     _Properties[id.x].color = float4(hsv2rgb(CalcColor(pos, _Boids[id.x].color.rgb, timeSinceUpdate)), alpha);
     _Properties[id.x].mat = GetTransformationMatrix(pos, scale);
@@ -313,7 +309,7 @@ void CSPyramid(uint3 id : SV_DispatchThreadID)
     _Boids[id.x].velocity = vel;
     _Boids[id.x].mass = mass;
 
-    float alpha = CalcAlpha(dist, size);
+    float s = CalcScale(dist, size);
 
     _Properties[id.x].color = float4(hsv2rgb(CalcColor(pos, _Boids[id.x].color.rgb, timeSinceUpdate)), alpha);
     _Properties[id.x].mat = GetTransformationMatrix(pos, scale);

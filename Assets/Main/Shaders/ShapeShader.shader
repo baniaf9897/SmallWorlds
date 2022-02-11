@@ -8,6 +8,7 @@ Shader "Custom/ShapeShader"
     {
         //Tags { "RenderType" = "Opaque" }
         LOD 100
+        Blend SrcAlpha OneMinusSrcAlpha
 
         Pass
         {
@@ -33,11 +34,13 @@ Shader "Custom/ShapeShader"
             float3 rayDir : TEXCOORD0;
             float3 rayOrigin : TEXCOORD1;
             float3 sphPos : TEXCOORD2;
+            float scale : TEXCOORD3;
         };
 
         struct MeshProperties {
             float4x4 mat;
             float4 color;
+            float scale;
         };
 
         StructuredBuffer<MeshProperties> _Properties;
@@ -65,6 +68,8 @@ Shader "Custom/ShapeShader"
             o.pos = UnityWorldToClipPos(worldPos);
             o.color = _Properties[instanceID].color;
 
+
+            o.scale = _Properties[instanceID].scale;
             return o;
 
          }
@@ -88,7 +93,7 @@ Shader "Custom/ShapeShader"
 
             float3 spherePos = i.sphPos;
 
-            float rayHit = sphIntersect(rayOrigin, rayDir, float4(spherePos, 0.02 * i.color.w));
+            float rayHit = sphIntersect(rayOrigin, rayDir, float4(spherePos, 0.02 * i.scale));
 
             clip(rayHit);
           

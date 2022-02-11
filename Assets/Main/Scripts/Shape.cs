@@ -31,11 +31,12 @@ public struct ParticleProps
 
     public Matrix4x4 mat;
     public Vector4 color;
-
+    public float scale;
     public static int Size()
     {
         return
-            sizeof(float) * 4 * 4 + // matrix;
+            sizeof(float) +
+            sizeof(float) * 4 * 4  + // matrix;
             sizeof(float) * 4;      // color;
     }
 }
@@ -68,5 +69,6 @@ public class Shape
     public float gravityFactor;
     public float attractionFactor;
     public float lastUpdated;
+    public float alpha;
 
 }

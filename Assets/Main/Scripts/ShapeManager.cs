@@ -24,8 +24,6 @@ struct ShapeProps
     private Mesh m_mesh;
     private Mapper m_mapper;
 
-    ComputeBuffer m_shapePropBuffer;
-    ShapeProps[] m_shapeProps;
     int maxShapeCount = 50;
 
     float creationCooldown = 2.0f;
@@ -33,6 +31,8 @@ struct ShapeProps
 
     float globalGravityFactor = 1.0f;
     float globalAttractionFactor = 1.0f;
+
+    bool deleting = false;
 
     public ShapeManager(ComputeShader _computeShaderTmp, Material _matTmp, float _quadSize, Mapper _mapper)
     {
@@ -66,20 +66,6 @@ struct ShapeProps
         m_particlePropsBuffers = new List<ComputeBuffer>();
         m_argsBuffers = new List<ComputeBuffer>();
 
-        m_shapeProps =  new ShapeProps[maxShapeCount];
-
-        for(int i = 0; i < maxShapeCount; i++)
-        {
-            ShapeProps shapeProps = new ShapeProps();
-            shapeProps.center = new Vector3(0, 0, 0);
-            shapeProps.mass = 0;
-            shapeProps.active = 0;
-            m_shapeProps[i] = shapeProps;
-        }
-
-        m_shapePropBuffer = new ComputeBuffer(maxShapeCount, sizeof(float) * 4 + sizeof(int));
-        m_shapePropBuffer.SetData(m_shapeProps);
-
         //InitNewShape(new Vector3(0, 0, 0), 1.0f, ShapeGeometry.SPHERE, 0.05f, 0.05f, 0.05f, 1000);
         Debug.Log("[ShapeManager] Setup finished");
 
@@ -105,6 +91,7 @@ struct ShapeProps
         shapeProps.attractionFactor = globalAttractionFactor;
         shapeProps.rotation = Quaternion.identity;
         shapeProps.lastUpdated = 0.0f;
+        shapeProps.alpha = 1.0f;
 
         Color color = _color;
 
@@ -127,7 +114,7 @@ struct ShapeProps
             ParticleProps pProps = new ParticleProps();
             pProps.color = color;
             pProps.mat = Matrix4x4.TRS(p.pos, Quaternion.identity, p.scale);
-            
+            pProps.scale = 1.0f;
             shapeProps.particleProps.Add(pProps);
 
         }
@@ -155,13 +142,13 @@ struct ShapeProps
 
         compute.SetBuffer(kernel, "_Boids", boidBuffer);
         compute.SetBuffer(kernel, "_Properties", boidPropertiesBuffer);
-        compute.SetBuffer(kernel, "_ShapeProps", m_shapePropBuffer);
 
         compute.SetVector("center", _center);
         compute.SetFloat("centerMass", _mass);
         compute.SetFloat("gravityFactor", shapeProps.gravityFactor);
         compute.SetFloat("attractionFactor", shapeProps.attractionFactor);
         compute.SetFloat("speed", _speed);
+        compute.SetFloat("alpha", shapeProps.alpha);
 
         compute.SetFloat("size", _size);
 
@@ -185,25 +172,57 @@ struct ShapeProps
         Draw();
     }
 
-    public void Draw()
-    { 
-        for (int i = 0; i < m_shapes.Count; i++)
-        {
-            m_shapes[i].lastUpdated += Time.deltaTime;
-            if(m_shapes[i].lastUpdated > 5.0f && m_shapes[i].gravityFactor - 0.001f > 0.0f)
-            {
-                m_shapes[i].gravityFactor -= 0.0001f;
-            }
+    public void DeleteShape(int index)
+    {
+        m_shapes.RemoveAt(index); Debug.Log("Removed Shape");
 
-            if (m_shapes[i].repitions > 0)
-                Graphics.DrawMeshInstancedIndirect(m_mesh, 0, m_materials[i], m_shapes[i].bounds, m_argsBuffers[i]);
+        m_shaders.RemoveAt(index); Debug.Log("Removed Shape");
+
+        m_particleBuffers[index].Release(); Debug.Log("Removed part buffer");
+        m_particleBuffers.RemoveAt(index);
+
+        m_particlePropsBuffers[index].Release(); Debug.Log("Removed prop buffer");
+        m_particlePropsBuffers.RemoveAt(index);
+
+        m_argsBuffers[index].Release(); Debug.Log("Removed args");
+        m_argsBuffers.RemoveAt(index);
+
+        m_materials.RemoveAt(index); Debug.Log("Removed material");
+
+        deleting = false;
+    }
+    public void Draw()
+    {
+
+        for (int i = 0; i < m_shapes.Count; i++)
+            {
+
+                m_shapes[i].lastUpdated += Time.deltaTime;
+                m_shapes[i].alpha = CalcAlpha(m_shapes[i].lastUpdated);
+
+                if(m_shapes[i].alpha < 0.01)
+                {
+                    deleting = true;
+                    Debug.Log("DELETE !!!! " + i);
+                    DeleteShape(i);
+                }
+                else { 
+
+                    if(m_shapes[i].lastUpdated > 5.0f && m_shapes[i].gravityFactor - 0.001f > 0.0f)
+                    {
+                        m_shapes[i].gravityFactor -= 0.0001f;
+                    }
+
+                    if (m_shapes[i].repitions > 0)
+                        Graphics.DrawMeshInstancedIndirect(m_mesh, 0, m_materials[i], m_shapes[i].bounds, m_argsBuffers[i]);
+                }
         };
     }
 
 
     void UpdateShapes(AudioEvent _currentAudioEvent, int pitch)
     {
-
+        
         if(pitch <= 0)
         {
             return;
@@ -238,12 +257,10 @@ struct ShapeProps
 
             Color.RGBToHSV(color, out hsv.r,out hsv.g, out hsv.b);
 
-     
-
             if (value > 0 && _audioEvent.peakEnergy > 0.3f && timeSinceCreation > creationCooldown) {
                 timeSinceCreation = 0.0f;
                 int r = Random.Range(0, 4);
-                ShapeGeometry geometry = GetShapeByIndex(r);
+                ShapeGeometry geometry = ShapeGeometry.SPHERE;//GetShapeByIndex(r);
 
                 InitNewShape(value, new Vector3(0,0,0),size, mass,geometry, hsv, speed, friction,number);
                 Debug.Log("[ShapeManager] Create new Shape");
@@ -266,8 +283,6 @@ struct ShapeProps
 
         Shape max = GetMostRepititiveShape();
 
-
-
          for (int i = 0; i < m_shapes.Count; i++)
         {
 
@@ -279,7 +294,6 @@ struct ShapeProps
                 x = (float)s.repitions / (float)max.repitions;
             }
 
-
             float[] bounds = m_mapper.GetParamLimit(m_mapper.numberMapper);
             float value = m_mapper.Map(s.value, 20, 127, 1.5f, 2.5f);
 
@@ -288,22 +302,12 @@ struct ShapeProps
 
             SphericalToCartesian(r, s.seed * Mathf.PI, alpha, out Vector3 pos);
 
-
             s.center = pos;
             m_shapes[i] = s;
-
-            m_shapeProps[i].mass = s.mass;
-            m_shapeProps[i].center = s.center;
-            m_shapeProps[i].active = 1;
         }
-
-
-        m_shapePropBuffer.SetData(m_shapeProps);
-
     }
 
  
-
     public int Map(int value, int from1, int to1, int from2, int to2)
     {
         return (value - from1) / (to1 - from1) * (to2 - from2) + from2;
@@ -349,12 +353,12 @@ struct ShapeProps
                 m_shaders[i].SetFloat("attractionFactor", s.attractionFactor);
 
                 m_shaders[i].SetFloat("size", s.size);
-                m_shaders[i].SetBuffer(kernel, "_ShapeProps", m_shapePropBuffer);
                 m_shaders[i].SetInt("maxShapeCount", maxShapeCount);
                 
                 m_shaders[i].SetFloat("timeSinceUpdate", s.lastUpdated);
 
                 m_shaders[i].SetVector("_Time", Shader.GetGlobalVector("_Time"));
+                m_shaders[i].SetFloat("alpha", s.alpha);
 
                 m_shaders[i].Dispatch(kernel, Mathf.CeilToInt(s.particles.Count / 128), 1, 1);
                 m_shapes[i] = s;
@@ -472,6 +476,18 @@ struct ShapeProps
             m_particlePropsBuffers[i].Release();
             m_argsBuffers[i].Release();
         }
+    }
+
+    float CalcAlpha(float timeSinceUpdate)
+    {
+        float alpha = 1.0f;
+
+        if (timeSinceUpdate > 1.0)
+        {
+            alpha -= timeSinceUpdate / 10;
+        }
+
+        return alpha;
     }
 
 }
