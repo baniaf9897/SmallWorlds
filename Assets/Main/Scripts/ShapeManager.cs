@@ -260,7 +260,7 @@ struct ShapeProps
             if (value > 0 && _audioEvent.peakEnergy > 0.3f && timeSinceCreation > creationCooldown) {
                 timeSinceCreation = 0.0f;
                 int r = Random.Range(0, 4);
-                ShapeGeometry geometry = ShapeGeometry.SPHERE;//GetShapeByIndex(r);
+                ShapeGeometry geometry = GetShapeByIndex(r);
 
                 InitNewShape(value, new Vector3(0,0,0),size, mass,geometry, hsv, speed, friction,number);
                 Debug.Log("[ShapeManager] Create new Shape");
@@ -295,7 +295,7 @@ struct ShapeProps
             }
 
             float[] bounds = m_mapper.GetParamLimit(m_mapper.numberMapper);
-            float value = m_mapper.Map(s.value, 20, 127, 1.5f, 2.5f);
+            float value = m_mapper.Map(s.value, 10, 80, 1.5f, 2.5f);
 
             float alpha = value * Mathf.PI;
             float r =  (1.0f - x) * 8.0f;
@@ -482,7 +482,7 @@ struct ShapeProps
     {
         float alpha = 1.0f;
 
-        if (timeSinceUpdate > 1.0)
+        if (timeSinceUpdate > 180.0)
         {
             alpha -= timeSinceUpdate / 10;
         }

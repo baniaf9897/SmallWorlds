@@ -144,7 +144,7 @@ float CalcScale(float dist, float size) {
 
 float3 CalcColor(float3 pos, float3 color, float timeSinceUpdate) {
      color.x += noise3D(pos) * 0.1;
-     color.y = clamp(color.y - timeSinceUpdate * 0.1, 0.3, 1);
+     color.y = clamp(color.y - timeSinceUpdate * 0.01, 0.6, 1);
 
      return color;
 }
@@ -216,6 +216,8 @@ void CSCube(uint3 id : SV_DispatchThreadID)
 
     _Properties[id.x].color = float4(hsv2rgb(CalcColor(pos, _Boids[id.x].color.rgb, timeSinceUpdate)), alpha);
     _Properties[id.x].mat = GetTransformationMatrix(pos, scale);
+    _Properties[id.x].scale = s;
+
 }
 
 [numthreads(256, 1, 1)]
@@ -281,6 +283,8 @@ void CSCapsule(uint3 id : SV_DispatchThreadID)
 
     _Properties[id.x].color = float4(hsv2rgb(CalcColor(pos, _Boids[id.x].color.rgb, timeSinceUpdate)), alpha);
     _Properties[id.x].mat = GetTransformationMatrix(pos, scale);
+    _Properties[id.x].scale = s;
+
 }
 
 [numthreads(128, 1, 1)]
@@ -313,5 +317,7 @@ void CSPyramid(uint3 id : SV_DispatchThreadID)
 
     _Properties[id.x].color = float4(hsv2rgb(CalcColor(pos, _Boids[id.x].color.rgb, timeSinceUpdate)), alpha);
     _Properties[id.x].mat = GetTransformationMatrix(pos, scale);
+    _Properties[id.x].scale = s;
+
 }
 
