@@ -87,6 +87,7 @@ Shader "Custom/ShapeShader"
 
          fixed4 frag(v2f i, out float outDepth : SV_Depth) : SV_Target
          {
+
              
             float3 rayOrigin = i.rayOrigin;
             float3 rayDir = normalize(i.rayDir);
@@ -100,16 +101,25 @@ Shader "Custom/ShapeShader"
             float3 worldPos = rayDir * rayHit + rayOrigin;
             float3 worldNormal = normalize(worldPos - spherePos);
 
+           
+
             // basic lighting
             half3 worldLightDir = _WorldSpaceLightPos0.xyz;
             half ndotl = saturate(dot(worldNormal, worldLightDir));
             half3 lighting = i.color * ndotl;
 
+
+
+            float3 viewDirection = normalize(_WorldSpaceCameraPos - worldPos);
+            float3 refl = normalize(reflect(-worldLightDir, worldNormal));
+            float RdotV = max(0., dot(refl, viewDirection));
+            fixed3 spec = pow(RdotV, 0.9) * float3(1,1,1) * ceil(ndotl) * float3(1, 1, 1) * 0.3;
+
             // output modified depth
             float4 clipPos = UnityWorldToClipPos(worldPos);
             outDepth = clipPos.z / clipPos.w;
 
-            return half4(lighting, i.color.w);
+            return half4(lighting + spec, i.color.w);
          }
          ENDCG
      }

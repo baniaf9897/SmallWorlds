@@ -1619,12 +1619,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   limits:
-    minSize: 0.5
-    maxSize: 1.86
+    minSize: 0.57
+    maxSize: 3.73
     minMass: 5
     maxMass: 5
     minFriction: 0.05
-    maxFriction: 0.12
+    maxFriction: 0.1
     minSpeed: 0.01
     maxSpeed: 0.1
     minNumber: 15232
@@ -1634,7 +1634,7 @@ MonoBehaviour:
   speedMapper: 3
   frictionMapper: 5
   colorMapper: 5
-  sizeMapper: 1
+  sizeMapper: 5
   valueMapper: 2
 --- !u!1 &2122892233
 GameObject:
