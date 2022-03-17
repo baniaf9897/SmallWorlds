@@ -1483,7 +1483,7 @@ MonoBehaviour:
   materialTmp: {fileID: 2100000, guid: b9d5bfdcdb68f1f469630a330cfbac6c, type: 2}
   quadSize: 0.1
   m_shapeManager: {fileID: 0}
-  globalGravity: 0.42
+  globalGravity: 0.718
   globalAttraction: 0
 --- !u!82 &2095717743
 AudioSource:
@@ -1605,7 +1605,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6291d1cd9c2bea94482c4d7a30f5ae2e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Port: 9992
+  m_Port: 9002
 --- !u!114 &2095717746
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1623,12 +1623,12 @@ MonoBehaviour:
     maxSize: 3.73
     minMass: 5
     maxMass: 5
-    minFriction: 0.05
-    maxFriction: 0.1
+    minFriction: 0.01
+    maxFriction: 0.05
     minSpeed: 0.01
-    maxSpeed: 0.1
-    minNumber: 15232
-    maxNumber: 31524
+    maxSpeed: 0.5
+    minNumber: 27015
+    maxNumber: 42030
   numberMapper: 1
   massMapper: 1
   speedMapper: 3

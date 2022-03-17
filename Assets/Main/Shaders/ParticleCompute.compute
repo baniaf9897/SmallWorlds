@@ -178,7 +178,7 @@ float3 applyForces(float3 pos, float mass1, float mass2, float dist, float frict
     acceleration += GetGravityForce(pos, mass1, mass2, dist) * gravityFactor;
 
     //random steering => perlin noise
-    acceleration += GetSteeringForce(pos, mass1, frictionCoefficient);
+     acceleration += GetSteeringForce(pos, mass1, frictionCoefficient);
 
 
     return acceleration;
@@ -220,7 +220,7 @@ void CSCube(uint3 id : SV_DispatchThreadID)
 
 }
 
-[numthreads(256, 1, 1)]
+[numthreads(128, 1, 1)]
 void CSSphere(uint3 id : SV_DispatchThreadID)
 {
 
@@ -233,8 +233,8 @@ void CSSphere(uint3 id : SV_DispatchThreadID)
     float eps = 0.01;
 
     float3 nextPos = pos + vel;
-    float dist = CalcDistanceSphere(center, nextPos);
-    float3 acceleration = applyForces(nextPos, mass, centerMass, dist, friction);
+    float dist = CalcDistanceSphere(center, pos);
+    float3 acceleration = applyForces(pos, mass, centerMass, dist, friction);
  
     vel += acceleration; 
     vel = limit(vel, 0.3);

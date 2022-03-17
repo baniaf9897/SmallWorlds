@@ -67,7 +67,6 @@ struct ShapeProps
         m_argsBuffers = new List<ComputeBuffer>();
 
         //InitNewShape(new Vector3(0, 0, 0), 1.0f, ShapeGeometry.SPHERE, 0.05f, 0.05f, 0.05f, 1000);
-        Debug.Log("[ShapeManager] Setup finished");
 
     }
 
@@ -203,7 +202,6 @@ struct ShapeProps
                 if(m_shapes[i].alpha < 0.01)
                 {
                     deleting = true;
-                    Debug.Log("DELETE !!!! " + i);
                     DeleteShape(i);
                 }
                 else { 
@@ -260,16 +258,10 @@ struct ShapeProps
             if (value > 0 && _audioEvent.peakEnergy > 0.3f && timeSinceCreation > creationCooldown) {
                 timeSinceCreation = 0.0f;
                 int r = Random.Range(0, 4);
-                ShapeGeometry geometry = GetShapeByIndex(r);
+                ShapeGeometry geometry = ShapeGeometry.SPHERE;// GetShapeByIndex(r);
 
                 InitNewShape(value, new Vector3(0,0,0),size, mass,geometry, hsv, speed, friction,number);
-                Debug.Log("[ShapeManager] Create new Shape");
-                Debug.Log("Size " + size);
-                Debug.Log("speed " + speed);
-                Debug.Log("friction " + friction);
-                Debug.Log("mass " + mass);
-                Debug.Log("number " + number);
-                Debug.Log("value " + value);
+             
             }
         }
     }
@@ -279,14 +271,16 @@ struct ShapeProps
 
         m_shapes[index].lastUpdated = 0.0f ;
         m_shapes[index].repitions++;
-        m_shapes[index].gravityFactor += 0.01f;
+        
+        if(m_shapes[index].gravityFactor < globalGravityFactor)
+            m_shapes[index].gravityFactor += 0.01f;
 
         Shape max = GetMostRepititiveShape();
 
          for (int i = 0; i < m_shapes.Count; i++)
         {
 
-            float x = 0.0f;
+            float x = 1.0f;
             Shape s = m_shapes[i];
                  
             if (max.repitions > 0.0f)
@@ -294,11 +288,10 @@ struct ShapeProps
                 x = (float)s.repitions / (float)max.repitions;
             }
 
-            float[] bounds = m_mapper.GetParamLimit(m_mapper.numberMapper);
             float value = m_mapper.Map(s.value, 10, 80, 1.5f, 2.5f);
 
             float alpha = value * Mathf.PI;
-            float r =  (1.0f - x) * 8.0f;
+            float r = 2.0f;//  (1.0f - x) * 8.0f;
 
             SphericalToCartesian(r, s.seed * Mathf.PI, alpha, out Vector3 pos);
 
